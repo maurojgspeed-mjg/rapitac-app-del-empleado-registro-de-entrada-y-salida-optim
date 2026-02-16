@@ -437,27 +437,36 @@
         </div>
 
         <div class="drawer-header">Documentación & ART</div>
-<div class="drawer-item" onclick="verCredencialArt()" style="border-left: 4px solid var(--accent);">
-    <span>💳</span> Mi Credencial ART (Foto)
+
+<div class="drawer-item" onclick="verCredencialFoto()" style="border-left: 4px solid var(--accent); cursor:pointer;">
+    <span style="margin-right: 10px;">💳</span> 
+    <span>Mi Credencial ART (Foto)</span>
 </div>
 
-<div class="drawer-header">Documentación Legal</div>
-<div class="drawer-item" onclick="descargarDocumento('altas')" style="border-left: 4px solid var(--accent);">
-    <span>📄</span> Mi Alta Temprana (PDF)
+<div class="drawer-item" onclick="descargarDocumento('alta')" style="cursor:pointer;">
+    <i class="fas fa-file-contract" style="margin-right: 10px; color: #a5b4fc;"></i>
+    <span>Mi Alta Temprana (PDF)</span>
 </div>
-<div class="drawer-item" onclick="descargarDocumento('antecedentes')" style="border-left: 4px solid var(--accent);">
-    <span>⚖️</span> Antecedentes Penales (PDF)
+
+<div class="drawer-item" onclick="descargarDocumento('antecedentes')" style="cursor:pointer;">
+    <i class="fas fa-file-shield" style="margin-right: 10px; color: #a5b4fc;"></i>
+    <span>Antecedentes Penales (PDF)</span>
 </div>
-<div class="drawer-item" onclick="verDocumentoArt()" style="border-left: 4px solid var(--accent);">
-    <span>📄</span> Póliza / Cobertura (PDF)
+
+<div class="drawer-item" onclick="descargarDocumento('art')" style="cursor:pointer;">
+    <i class="fas fa-id-card" style="margin-right: 10px; color: #a5b4fc;"></i>
+    <span>Mi Credencial ART (PDF)</span>
+</div>
+
+<div class="drawer-item" onclick="descargarDocumento('poliza')" style="cursor:pointer;">
+    <i class="fas fa-shield-alt" style="margin-right: 10px; color: #a5b4fc;"></i>
+    <span>Póliza de Cobertura (PDF)</span>
 </div>
 
 <div class="drawer-header">Comunicaciones</div>
-<button class="btn-main" onclick="notificarAusencia()" style="background: #25d366; margin-top: 10px; border-radius: 16px;">
+<button class="btn-main" onclick="notificarAusencia()" style="background: #25d366; margin-top: 10px; border-radius: 16px; width: 100%; border: none; padding: 12px; color: white; font-weight: bold; cursor:pointer;">
     📲 NOTIFICAR AUSENCIA (WhatsApp)
 </button>
-    </div>
-</div>    
 
 <script>
     // --- BASE DE DATOS DE EMPLEADOS ---
@@ -1035,23 +1044,7 @@ function mostrarLegajo() {
 
 // ESTA ES LA FUNCIÓN MAESTRA QUE REEMPLAZA A TODAS LAS ANTERIORES
 // Se usa para: alta, art, antecedentes
-function descargarDocumento(tipo) {
-    const dni = USER_INFO.dni;
-    
-    // Buscamos en la carpeta correspondiente el archivo DNI_tipo.pdf
-    // Ejemplo: docs/art/30123456_art.pdf
-    const url = `docs/${tipo}/${dni}_${tipo}.pdf`;
-    
-    const link = document.createElement('a');
-    link.href = url;
-    
-    // Forzamos el nombre de descarga para que el usuario sepa qué bajó
-    link.download = `${tipo.toUpperCase()}_${dni}.pdf`;
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
+
 
 function abrirArt() {
     const msj = `DATOS DE ART\nAseguradora: Galeno ART\nPóliza: 12345678\nEmergencias: 0800-XXX-XXXX\n\n¿Desea llamar a emergencias ahora?`;
@@ -1094,6 +1087,40 @@ function verRegistrosDelLocal() {
     });
 
     alert(listado);
+}
+// FUNCIÓN PARA VISTA RÁPIDA DE FOTO
+function verCredencialFoto() {
+    const dni = USER_INFO.dni.toString().trim();
+    // Buscamos el archivo DNI_art_foto.jpg en la carpeta docs/art/
+    const url = `./docs/art/${dni}_art_foto.jpg`;
+    
+    console.log("Abriendo foto credencial:", url);
+    window.open(url, '_blank');
+}
+
+// FUNCIÓN MAESTRA PARA PDFS (La que ya pegamos antes, asegúrate que sea esta)
+function descargarDocumento(tipo) {
+    const dni = USER_INFO.dni.toString().trim();
+    const url = `./docs/${tipo}/${dni}_${tipo}.pdf`;
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${tipo.toUpperCase()}_${dni}.pdf`;
+    
+    document.body.appendChild(link);
+    
+    // Verificamos si existe antes de descargar
+    fetch(url).then(response => {
+        if (response.ok) {
+            link.click();
+        } else {
+            alert(`⚠️ El documento '${tipo.toUpperCase()}' no está cargado.\nArchivo buscado: ${dni}_${tipo}.pdf`);
+        }
+    }).catch(() => {
+        window.open(url, '_blank');
+    }).finally(() => {
+        document.body.removeChild(link);
+    });
 }
 
 window.onload = function() {

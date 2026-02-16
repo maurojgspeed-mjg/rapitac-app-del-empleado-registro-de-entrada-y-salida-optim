@@ -468,6 +468,7 @@
     📲 NOTIFICAR AUSENCIA (WhatsApp)
 </button>
 
+
 <script>
     // --- BASE DE DATOS DE EMPLEADOS ---
 const EMPLEADOS = [
@@ -486,7 +487,7 @@ const EMPLEADOS = [
 // Variable para el usuario que inicia sesión (se llena al validar)
 let USER_INFO = {};
 
-    // --- FUNCIÓN VALIDAR (MEJORADA) ---
+// --- FUNCIÓN VALIDAR (VERSION FINAL CORREGIDA) ---
 function validar() {
     const d = document.getElementById('dni').value.trim();
     const p = document.getElementById('pass').value.trim();
@@ -496,23 +497,25 @@ function validar() {
 
     if(u) {
         // 2. PRIVACIDAD: Creamos la sesión y aislamos al usuario
-        // Guardamos en USER_INFO solo los datos de quien entró
         USER_INFO = JSON.parse(JSON.stringify(u));
 
-        // 3. SEGURIDAD ADICIONAL: Guardamos en localStorage para que la PWA lo recuerde
+        // 3. SEGURIDAD: Guardamos en localStorage para que la PWA lo recuerde
         localStorage.setItem('sesion_activa', JSON.stringify(USER_INFO));
 
-        // LEER MEMORIA: Sucursal persistente por DNI
+        // LEER MEMORIA: Sucursal persistente por DNI (Para que Merlo quede fijo)
         const guardada = localStorage.getItem(`ultima_sucursal_${USER_INFO.dni}`);
         if (guardada) {
             USER_INFO.sucursal = guardada;
         }
 
-        // 4. INTERFAZ: Actualizamos el banner de bienvenida (con tu diseño original)
-        // Nota: Si ya tenés las fotos en la carpeta img, podemos cambiar el link de dicebear por la ruta local
+        // 4. INTERFAZ: Banner de bienvenida (Ruta de foto corregida)
+        const fotoRuta = `./img/perfiles/${USER_INFO.dni}_foto.jpg`;
+        const avatarFallback = `https://api.dicebear.com/7.x/avataaars/svg?seed=${USER_INFO.dni}`;
+
         document.getElementById('welcome').innerHTML = `
             <div style="display:flex; align-items:center; gap:12px; width: 100%;">
-                <img src="${USER_INFO.foto || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + USER_INFO.dni}" 
+                <img src="${fotoRuta}" 
+                     onerror="this.src='${avatarFallback}'"
                      style="width:45px; height:45px; background:var(--glass); border-radius:12px; border:2px solid var(--accent); object-fit: cover;">
                 <div style="flex-grow: 1;">
                     <div style="font-size:16px; font-weight: bold;">${USER_INFO.nombre}</div>
@@ -525,9 +528,15 @@ function validar() {
         
         // 5. NAVEGACIÓN
         mostrarSeccion('main-screen');
-        render(); // Tu función de dibujado de historial
         
-        console.log("Sesión iniciada de forma privada para:", USER_INFO.nombre);
+        // Llamamos a la actualización de los datos del legajo (foto, nombre, sucursal)
+        if(typeof actualizarInterfazUsuario === 'function') {
+            actualizarInterfazUsuario();
+        }
+
+        if(typeof render === 'function') render(); 
+        
+        console.log("Sesión iniciada correctamente para:", USER_INFO.nombre);
     } else { 
         alert("DNI o Clave incorrectos."); 
     }
@@ -571,18 +580,7 @@ function cambiarSucursal() {
         d.style.right = (d.style.right === '0px') ? '-100%' : '0px';
     }
 
-    function mostrarSeccion(id) {
-        ['login-screen', 'main-screen', 'seccionAdelantos', 'vacaciones-screen', 'panel-encargado'].forEach(s => {
-            const el = document.getElementById(s);
-            if(el) el.style.display = 'none';
-        });
-        const activa = document.getElementById(id);
-        if(activa) activa.style.display = 'flex';
-        
-        if(id === 'seccionAdelantos') actualizarVistaAdelantos();
-        if(id === 'vacaciones-screen') actualizarVistaVacaciones();
-    }
-
+    
 async function confirmar(tipo) {
     // 1. Pedir confirmación al usuario
     if(!confirm(`¿Registrar tu ${tipo} ahora?`)) return;
@@ -838,17 +836,23 @@ function abrirGestion() {
     }
     document.body.removeChild(el);
 }
-    
-function mostrarSeccion(id) {
-    // Aquí agregamos 'seccion-legajo' y 'panel-encargado' a la lista de "limpieza"
+    function mostrarSeccion(id) {
+    // 1. Apagamos todas las pantallas
     ['login-screen', 'main-screen', 'seccionAdelantos', 'vacaciones-screen', 'panel-encargado', 'seccion-legajo'].forEach(s => {
         const el = document.getElementById(s);
-        if(el) el.style.display = 'none'; // Esto apaga todas las pantallas
+        if(el) el.style.display = 'none';
     });
 
+    // 2. Prendemos la que pediste
     const activa = document.getElementById(id);
-    if(activa) activa.style.display = 'flex'; // Esto prende solo la que tocaste
+    if(activa) activa.style.display = 'flex';
     
+    // 3. ¡CONEXIÓN MÁGICA! Si entramos al Inicio o al Legajo, cargamos tus datos y foto
+    if(id === 'main-screen' || id === 'seccion-legajo') {
+        actualizarInterfazUsuario();
+    }
+
+    // 4. Actualizamos el resto de las secciones
     if(id === 'seccionAdelantos') actualizarVistaAdelantos();
     if(id === 'vacaciones-screen') actualizarVistaVacaciones();
 }
@@ -1121,6 +1125,45 @@ function descargarDocumento(tipo) {
     }).finally(() => {
         document.body.removeChild(link);
     });
+}
+
+function actualizarInterfazUsuario() {
+    // 1. Verificamos que tengamos los datos del usuario
+    if (!USER_INFO || !USER_INFO.dni) {
+        console.error("Error: No hay información de usuario cargada.");
+        return;
+    }
+
+    const dni = USER_INFO.dni.toString().trim();
+    const nombre = USER_INFO.nombre || "Usuario";
+    const sucursal = USER_INFO.sucursal || "No asignada";
+
+    // --- FOTO DE PERFIL (Principal y Legajo) ---
+    const fotos = document.querySelectorAll('.foto-perfil-js'); // Usaremos una clase para actualizar todas juntas
+    const rutaFoto = `./img/perfiles/${dni}_foto.jpg?v=${Date.now()}`;
+
+    fotos.forEach(img => {
+        img.src = rutaFoto;
+        img.onerror = function() {
+            // Si falla, pone el avatar de DiceBear
+            this.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${dni}`;
+            this.onerror = null;
+        };
+    });
+
+    // --- DATOS DE TEXTO ---
+    // En la pantalla principal
+    const labelNombrePrincipal = document.getElementById('user-name-main');
+    if(labelNombrePrincipal) labelNombrePrincipal.innerText = nombre;
+
+    // En el Legajo Digital
+    const legajoNombre = document.getElementById('legajo-nombre-full');
+    const legajoID = document.getElementById('legajo-id');
+    const legajoSucursal = document.getElementById('legajo-sucursal');
+
+    if(legajoNombre) legajoNombre.innerText = nombre;
+    if(legajoID) legajoID.innerText = `ID Legajo: ${dni}`;
+    if(legajoSucursal) legajoSucursal.innerText = sucursal;
 }
 
 window.onload = function() {

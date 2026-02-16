@@ -481,22 +481,30 @@ let USER_INFO = {};
 function validar() {
     const d = document.getElementById('dni').value.trim();
     const p = document.getElementById('pass').value.trim();
+    
+    // 1. Buscamos al usuario en la lista interna
     const u = EMPLEADOS.find(user => user.dni === d && user.clave === p);
 
     if(u) {
-        // Creamos una copia para poder modificarla sin tocar la lista fija
+        // 2. PRIVACIDAD: Creamos la sesión y aislamos al usuario
+        // Guardamos en USER_INFO solo los datos de quien entró
         USER_INFO = JSON.parse(JSON.stringify(u));
 
-        // LEER MEMORIA: Si el teléfono tiene guardada una sucursal para este DNI, la usa
+        // 3. SEGURIDAD ADICIONAL: Guardamos en localStorage para que la PWA lo recuerde
+        localStorage.setItem('sesion_activa', JSON.stringify(USER_INFO));
+
+        // LEER MEMORIA: Sucursal persistente por DNI
         const guardada = localStorage.getItem(`ultima_sucursal_${USER_INFO.dni}`);
         if (guardada) {
             USER_INFO.sucursal = guardada;
         }
 
+        // 4. INTERFAZ: Actualizamos el banner de bienvenida (con tu diseño original)
+        // Nota: Si ya tenés las fotos en la carpeta img, podemos cambiar el link de dicebear por la ruta local
         document.getElementById('welcome').innerHTML = `
             <div style="display:flex; align-items:center; gap:12px; width: 100%;">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${USER_INFO.dni}" 
-                     style="width:45px; height:45px; background:var(--glass); border-radius:12px; border:2px solid var(--accent);">
+                <img src="${USER_INFO.foto || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + USER_INFO.dni}" 
+                     style="width:45px; height:45px; background:var(--glass); border-radius:12px; border:2px solid var(--accent); object-fit: cover;">
                 <div style="flex-grow: 1;">
                     <div style="font-size:16px; font-weight: bold;">${USER_INFO.nombre}</div>
                     <button onclick="cambiarSucursal()" 
@@ -506,8 +514,11 @@ function validar() {
                 </div>
             </div>`;
         
+        // 5. NAVEGACIÓN
         mostrarSeccion('main-screen');
-        render();
+        render(); // Tu función de dibujado de historial
+        
+        console.log("Sesión iniciada de forma privada para:", USER_INFO.nombre);
     } else { 
         alert("DNI o Clave incorrectos."); 
     }
@@ -515,20 +526,33 @@ function validar() {
 
 // 3. ÚNICA FUNCIÓN CAMBIAR SUCURSAL (Borrá las otras que tengas)
 function cambiarSucursal() {
+    // 1. Generamos las opciones basadas en tu lista de LOCALES
     let opciones = LOCALES.map((l, i) => `${i+1}- ${l.n} (${l.d})`).join("\n");
-    let eleccion = prompt("SELECCIONE SUCURSAL ACTUAL:\n" + opciones);
+    let eleccion = prompt("📍 SELECCIONE SUCURSAL ACTUAL:\n" + opciones);
     
     if (eleccion !== null) {
         let indice = parseInt(eleccion) - 1;
+        
         if (indice >= 0 && indice < LOCALES.length) {
+            // 2. Actualizamos el dato en el objeto del usuario activo
             USER_INFO.sucursal = LOCALES[indice].n;
+            
+            // 3. GUARDADO SEGURO: Usamos el DNI para que sea único por empleado
             localStorage.setItem(`ultima_sucursal_${USER_INFO.dni}`, USER_INFO.sucursal);
             
-            // Refrescamos el cartel de arriba
-            validar(); 
-            alert("Ubicación actualizada: " + USER_INFO.sucursal);
+            // 4. ACTUALIZACIÓN VISUAL INMEDIATA (Sin llamar a validar)
+            // Buscamos el botón de la sucursal por su ID o actualizamos el banner
+            const btnSucursal = document.querySelector("#welcome button");
+            if (btnSucursal) {
+                btnSucursal.innerHTML = `📍 ${USER_INFO.sucursal} ▾`;
+            } else {
+                // Si el botón no existe, refrescamos el render para que se vea el cambio
+                render(); 
+            }
+
+            alert("✅ Ubicación actualizada: " + USER_INFO.sucursal);
         } else {
-            alert("Opción no válida.");
+            alert("❌ Opción no válida. Elija un número de la lista.");
         }
     }
 }
@@ -603,15 +627,21 @@ async function confirmar(tipo) {
  // --- BLOQUE CORREGIDO: LISTADO DE REGISTROS ---
 function render() {
     const l = document.getElementById('list');
+    // 1. Obtenemos todos los registros de la memoria
     const h = JSON.parse(localStorage.getItem('logs_rt')) || [];
     
-    if(h.length === 0) {
-        l.innerHTML = '<p style="text-align:center; opacity:0.5; margin-top:20px;">No hay registros.</p>';
+    // 2. FILTRO DE SEGURIDAD: 
+    // Solo mostramos los registros que coincidan con el DNI del usuario que inició sesión
+    const misRegistros = h.filter(r => r.dni === USER_INFO.dni);
+
+    if(misRegistros.length === 0) {
+        l.innerHTML = '<p style="text-align:center; opacity:0.5; margin-top:20px;">No hay registros personales.</p>';
         return;
     }
 
-    l.innerHTML = h.map(r => {
-        // El pin (📍) solo aparece si el registro tiene coordenadas válidas
+    // 3. Dibujamos solo mis registros (usando tu diseño original)
+    // Usamos .reverse() para que el último fichaje aparezca primero arriba
+    l.innerHTML = misRegistros.reverse().map(r => {
         const botonMapa = (r.mapa && r.mapa.includes('http')) 
             ? `<a href="${r.mapa}" target="_blank" style="text-decoration:none; margin-left:8px; font-size:18px;">📍</a>` 
             : '';
@@ -639,7 +669,7 @@ function render() {
         if(!m || m <= 0) return alert("Ingresa un monto válido.");
         if(confirm(`¿Solicitar adelanto de $${m}?`)) {
             let ads = JSON.parse(localStorage.getItem('adelantos_rapitac')) || [];
-            ads.unshift({ id: Date.now(), monto: m, motivo: mot || "Sin motivo", fecha: new Date().toLocaleString(), estado: "Pendiente", respuesta: "Esperando encargado..." });
+            ads.unshift({ id: Date.now(), dni: USER_INFO.dni, monto: m, motivo: mot || "Sin motivo", fecha: new Date().toLocaleString(), estado: "Pendiente", respuesta: "Esperando encargado..." });
             localStorage.setItem('adelantos_rapitac', JSON.stringify(ads));
             document.getElementById('montoSolicitado').value = '';
             document.getElementById('motivoAdelanto').value = '';
@@ -649,18 +679,22 @@ function render() {
     }
 
     function actualizarVistaAdelantos() {
-        const c = document.getElementById('historialAdelantos');
-        const ads = JSON.parse(localStorage.getItem('adelantos_rapitac')) || [];
-        c.innerHTML = ads.length === 0 ? '<p style="color:#888; text-align:center;">Sin solicitudes.</p>' :
-            ads.map(s => `
-                <div style="background: #333; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid ${s.estado === 'Pendiente' ? '#FFD700' : '#4CAF50'};">
-                    <div style="display:flex; justify-content:space-between; font-size:0.8em;">
-                        <span>${s.fecha}</span><strong style="color:#FFD700;">${s.estado}</strong>
-                    </div>
-                    <div style="margin:5px 0;"><strong>$${s.monto}</strong> - <small>${s.motivo}</small></div>
-                    <div style="color:#00d4ff; font-size:0.85em;">Resp: ${s.respuesta}</div>
-                </div>`).join('');
-    }
+    const c = document.getElementById('historialAdelantos');
+    const todosLosAds = JSON.parse(localStorage.getItem('adelantos_rapitac')) || [];
+    
+    // FILTRO DE PRIVACIDAD: Solo mis adelantos
+    const misAds = todosLosAds.filter(a => a.dni === USER_INFO.dni);
+
+    c.innerHTML = misAds.length === 0 ? '<p style="color:#888; text-align:center;">Sin solicitudes.</p>' :
+        misAds.map(s => `
+            <div style="background: #333; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid ${s.estado === 'Pendiente' ? '#FFD700' : '#4CAF50'};">
+                <div style="display:flex; justify-content:space-between; font-size:0.8em;">
+                    <span>${s.fecha}</span><strong style="color:#FFD700;">${s.estado}</strong>
+                </div>
+                <div style="margin:5px 0;"><strong>$${s.monto}</strong> - <small>${s.motivo}</small></div>
+                <div style="color:#00d4ff; font-size:0.85em;">Resp: ${s.respuesta}</div>
+            </div>`).join('');
+}
 
    // --- BLOQUE ACTUALIZADO: ACCESO DE SEGURIDAD ---
 function accesoEncargado() {
@@ -820,8 +854,10 @@ function mostrarSeccion(id) {
 
     if (confirm(`¿Solicitar vacaciones desde el ${desde} al ${hasta}?`)) {
         let vacas = JSON.parse(localStorage.getItem('vacaciones_rapitac')) || [];
+        
         const nuevaVaca = {
             id: Date.now(),
+            dni: USER_INFO.dni, // <--- CLAVE: Vinculamos la solicitud al empleado
             desde: desde,
             hasta: hasta,
             fechaSolicitud: new Date().toLocaleDateString(),
@@ -832,41 +868,14 @@ function mostrarSeccion(id) {
         vacas.unshift(nuevaVaca);
         localStorage.setItem('vacaciones_rapitac', JSON.stringify(vacas));
         
-        // Limpiar campos
         document.getElementById('vaca-desde').value = '';
         document.getElementById('vaca-hasta').value = '';
         
         actualizarVistaVacaciones();
-        alert("Solicitud de vacaciones enviada con éxito.");
+        alert("Solicitud enviada con éxito.");
     }
 }
-
-function actualizarVistaVacaciones() {
-    const contenedor = document.getElementById('historialVacaciones');
-    const vacas = JSON.parse(localStorage.getItem('vacaciones_rapitac')) || [];
-
-    if (vacas.length === 0) {
-        contenedor.innerHTML = '<p style="color: #888; text-align: center;">No hay solicitudes de licencia.</p>';
-        return;
-    }
-
-    contenedor.innerHTML = vacas.map(v => `
-        <div style="background: #1e293b; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid ${v.estado === 'Pendiente' ? '#3b82f6' : '#10b981'};">
-            <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #aaa;">
-                <span>Solicitado el: ${v.fechaSolicitud}</span>
-                <strong style="color: #3b82f6;">${v.estado}</strong>
-            </div>
-            <div style="margin-top: 5px; color: #fff;">
-                <strong>Del ${v.desde} al ${v.hasta}</strong>
-            </div>
-            <div style="margin-top: 5px; font-style: italic; font-size: 0.85em; color: #10b981;">
-                Resp: ${v.respuesta}
-            </div>
-        </div>
-    `).join('');
-}
-
-// --- MOTOR DE VACACIONES ---
+// --- MOTOR DE VACACIONES (CORREGIDO Y PRIVADO) ---
 function solicitarVaca() {
     const desde = document.getElementById('vaca-desde').value;
     const hasta = document.getElementById('vaca-hasta').value;
@@ -875,12 +884,12 @@ function solicitarVaca() {
         return alert("Por favor, selecciona ambas fechas.");
     }
 
-    // Confirmación estética
     if (confirm(`¿Solicitar vacaciones del ${desde} al ${hasta}?`)) {
         let vacas = JSON.parse(localStorage.getItem('vacaciones_rapitac')) || [];
         
         const nuevaSolicitud = {
             id: Date.now(),
+            dni: USER_INFO.dni, // <--- AHORA SÍ GUARDA EL DNI
             desde: desde,
             hasta: hasta,
             fechaSolicitud: new Date().toLocaleDateString(),
@@ -888,10 +897,9 @@ function solicitarVaca() {
             respuesta: "Esperando revisión de locales..."
         };
         
-        vacas.unshift(nuevaSolicitud); // Pone la más nueva arriba
+        vacas.unshift(nuevaSolicitud);
         localStorage.setItem('vacaciones_rapitac', JSON.stringify(vacas));
         
-        // Limpiamos los calendarios
         document.getElementById('vaca-desde').value = '';
         document.getElementById('vaca-hasta').value = '';
         
@@ -904,15 +912,18 @@ function actualizarVistaVacaciones() {
     const contenedor = document.getElementById('historialVacaciones');
     if(!contenedor) return;
 
-    const vacas = JSON.parse(localStorage.getItem('vacaciones_rapitac')) || [];
+    const todasLasVacas = JSON.parse(localStorage.getItem('vacaciones_rapitac')) || [];
 
-    if (vacas.length === 0) {
-        contenedor.innerHTML = '<p style="color: #888; text-align: center; font-size: 13px;">No hay solicitudes de licencia anteriores.</p>';
+    // FILTRO DE PRIVACIDAD REFORZADO:
+    // Solo muestra si coincide el DNI (y oculta los registros viejos sin DNI)
+    const misVacas = todasLasVacas.filter(v => v.dni && v.dni === USER_INFO.dni);
+
+    if (misVacas.length === 0) {
+        contenedor.innerHTML = '<p style="color: #888; text-align: center; font-size: 13px;">No tienes solicitudes de licencia.</p>';
         return;
     }
 
-    // Dibujamos las tarjetas de vacaciones (estilo similar a adelantos)
-    contenedor.innerHTML = vacas.map(v => `
+    contenedor.innerHTML = misVacas.map(v => `
         <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid ${v.estado === 'Pendiente' ? '#f59e0b' : '#10b981'};">
             <div style="display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; margin-bottom: 5px;">
                 <span>Pedido el: ${v.fechaSolicitud}</span>
@@ -998,103 +1009,91 @@ function cambiarSucursal() {
     }
 }
 
-// --- BLOQUE: LEGAJO DIGITAL DINÁMICO ---
+// --- BLOQUE: LEGAJO DIGITAL DINÁMICO (VERSIÓN UNIFICADA Y SEGURA) ---
+
 function mostrarLegajo() {
     const fotoElement = document.getElementById('legajo-foto');
     if(!fotoElement) return;
 
-    // 1. Limpiamos el DNI y armamos la ruta con ./ para GitHub/Windows
-    const dniLimpio = USER_INFO.dni.toString().trim();
-    const pathBase = `./img/perfiles/${dniLimpio}.jpg`;
+    const dni = USER_INFO.dni.toString().trim();
+    
+    // Usamos el formato DNI_foto.jpg para que sea único
+    fotoElement.src = `./img/perfiles/${dni}_foto.jpg?v=${Date.now()}`;
 
-    // 2. Intentamos cargar con un "truco" para evitar el caché
-    // Le agregamos ?v=1 para que el navegador la busque como nueva
-    fotoElement.src = pathBase + "?v=" + Date.now();
-
-    // 3. Si falla el .jpg, probamos el avatar automático
     fotoElement.onerror = function() {
-        console.log("No se encontró la foto en: " + pathBase);
-        this.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${dniLimpio}`;
-        this.onerror = null; // Evita bucles
+        console.log("Foto personalizada no encontrada, usando avatar.");
+        this.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${dni}`;
+        this.onerror = null; 
     };
 
-    // Actualizar los datos de texto
     document.getElementById('legajo-nombre-full').innerText = USER_INFO.nombre;
-    document.getElementById('legajo-id').innerText = `DNI: ${dniLimpio}`;
+    document.getElementById('legajo-id').innerText = `DNI: ${dni}`;
     document.getElementById('legajo-sucursal').innerText = USER_INFO.sucursal;
     
     mostrarSeccion('seccion-legajo');
 }
 
-function abrirArt() {
-    const msj = `DATOS DE ART\nAseguradora: Galeno ART\nPóliza: 12345678\nEmergencias: 0800-XXX-XXXX\n\n¿Desea llamar a emergencias ahora?`;
-    if(confirm(msj)) {
-        window.location.href = "tel:08001234567"; // Poné el número real acá
-    }
-}
-
-function descargarAlta() {
-    const url = `docs/altas/${USER_INFO.dni}.pdf`;
-    window.open(url, '_blank');
-}
-
-function notificarAusencia() {
-    const motivo = prompt("Ingrese el motivo de la ausencia (ej: Médico, Trámite, etc.):");
-    if(!motivo) return;
-    
-    const texto = `Hola, soy ${USER_INFO.nombre}. Informo que por razones de ${motivo} no podré presentarme hoy ${new Date().toLocaleDateString()}. Adjunto comprobante a continuación.`;
-    const win = window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
-}
-
-function verCredencialArt() {
-    const fotoArt = document.createElement('img');
-    const pathBase = `docs/art/${USER_INFO.dni}`;
-    
-    // Intentamos abrir la imagen en una pestaña nueva
-    // Primero probamos con .jpg
-    const urlJpg = `${pathBase}.jpg`;
-    
-    // Para las imágenes, lo mejor es abrir un pequeño modal o una pestaña
-    // Aquí intentaremos abrir directamente el archivo
-    window.open(urlJpg, '_blank');
-    
-    // Nota: Si quieres que sea más pro, podemos hacer que el botón
-    // intente abrir el .jpeg si el .jpg no existe, pero en navegadores
-    // window.open suele ser directo.
-}
-
-function verDocumentoArt() {
-    // Busca el PDF con tu DNI
-    const urlPdf = `docs/art/${USER_INFO.dni}.pdf`;
-    window.open(urlPdf, '_blank');
-}
-
-// Función maestra para descargar PDFs por DNI
-function descargarDocumento(carpeta) {
-    // carpeta puede ser 'altas', 'antecedentes' o 'art'
-    const url = `docs/${carpeta}/${USER_INFO.dni}.pdf`;
-    
-    // Abrimos en pestaña nueva
-    const win = window.open(url, '_blank');
-    
-    // Si no abre, puede que el archivo no exista
-    if (!win) {
-        alert("No se encontró el archivo. Verifique que esté en la carpeta: docs/" + carpeta);
-    }
-}
+// ESTA ES LA FUNCIÓN MAESTRA QUE REEMPLAZA A TODAS LAS ANTERIORES
+// Se usa para: alta, art, antecedentes
 function descargarDocumento(tipo) {
-    // La URL se construye usando el tipo (carpeta) y el DNI del usuario
-    const url = `docs/${tipo}/${USER_INFO.dni}.pdf`;
+    const dni = USER_INFO.dni;
+    
+    // Buscamos en la carpeta correspondiente el archivo DNI_tipo.pdf
+    // Ejemplo: docs/art/30123456_art.pdf
+    const url = `docs/${tipo}/${dni}_${tipo}.pdf`;
     
     const link = document.createElement('a');
     link.href = url;
     
-    // Esta es la parte clave que evita que se pisen los archivos al descargar
-    link.download = `${tipo.toUpperCase()}_${USER_INFO.dni}.pdf`;
+    // Forzamos el nombre de descarga para que el usuario sepa qué bajó
+    link.download = `${tipo.toUpperCase()}_${dni}.pdf`;
     
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+function abrirArt() {
+    const msj = `DATOS DE ART\nAseguradora: Galeno ART\nPóliza: 12345678\nEmergencias: 0800-XXX-XXXX\n\n¿Desea llamar a emergencias ahora?`;
+    if(confirm(msj)) {
+        window.location.href = "tel:08001234567"; 
+    }
+}
+
+function notificarAusencia() {
+    const motivo = prompt("Ingrese el motivo de la ausencia (Médico, Trámite, etc.):");
+    if(!motivo) return;
+    
+    const texto = `Hola, soy ${USER_INFO.nombre} (DNI: ${USER_INFO.dni}). Informo que por razones de ${motivo} no podré presentarme hoy ${new Date().toLocaleDateString()}.`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
+}
+
+function compartirFalta() {
+    const texto = `REPORTE DE AUSENCIA - RAPITAC\nEmpleado: ${USER_INFO.nombre}\nDNI: ${USER_INFO.dni}\nFecha: ${new Date().toLocaleDateString()}\nEstado: Notificado via App.`;
+    if (navigator.share) {
+        navigator.share({ title: 'Aviso de Ausencia', text: texto });
+    } else {
+        navigator.clipboard.writeText(texto);
+        alert("Comprobante copiado.");
+    }
+}
+
+function verRegistrosDelLocal() {
+    const h = JSON.parse(localStorage.getItem('logs_rt')) || [];
+    
+    // Filtramos solo los registros de la sucursal donde estoy ahora
+    const registrosLocal = h.filter(r => r.sucursal === USER_INFO.sucursal);
+
+    if(registrosLocal.length === 0) {
+        return alert("No hay registros hoy en " + USER_INFO.sucursal);
+    }
+
+    let listado = `🕒 HORARIOS EN ${USER_INFO.sucursal.toUpperCase()}\n\n`;
+    registrosLocal.slice(0, 10).forEach(r => {
+        listado += `${r.hora} hs - ${r.nombre} (${r.tipo})\n`;
+    });
+
+    alert(listado);
 }
 
 window.onload = function() {

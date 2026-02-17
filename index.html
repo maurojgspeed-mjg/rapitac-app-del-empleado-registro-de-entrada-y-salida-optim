@@ -2,6 +2,9 @@
 <html lang="es">
 <head>
 
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
 <meta name="theme-color" content="#2c3e50">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -843,7 +846,7 @@ function actualizarPanelGestion() {
     if (!contenedor) return;
     let html = "";
 
-    // 1. PESTAÑAS DE NAVEGACIÓN (Diseño moderno)
+    // 1. PESTAÑAS DE NAVEGACIÓN
     html += `
     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-bottom:20px; background:#0f172a; padding:5px; border-radius:12px;">
         <button onclick="cambiarVistaGestion('solicitudes')" style="background:${VISTA_ACTUAL_GESTION === 'solicitudes' ? 'var(--accent)' : 'transparent'}; color:white; border:none; padding:10px; border-radius:8px; font-size:10px; font-weight:bold; transition:0.3s;">SOLICITUDES</button>
@@ -851,21 +854,17 @@ function actualizarPanelGestion() {
         <button onclick="cambiarVistaGestion('locales')" style="background:${VISTA_ACTUAL_GESTION === 'locales' ? 'var(--accent)' : 'transparent'}; color:white; border:none; padding:10px; border-radius:8px; font-size:10px; font-weight:bold; transition:0.3s;">LOCALES</button>
     </div>`;
 
-    // 2. CONTENIDO DINÁMICO SEGÚN LA PESTAÑA
+    // 2. CONTENIDO DINÁMICO
     if (VISTA_ACTUAL_GESTION === 'solicitudes') {
         const adelantos = JSON.parse(localStorage.getItem('adelantos_rapitac')) || [];
-        const vacas = JSON.parse(localStorage.getItem('vacaciones_rapitac')) || [];
-        
-        if (adelantos.length === 0 && vacas.length === 0) {
+        if (adelantos.length === 0) {
             html += '<p style="text-align:center; opacity:0.4; margin-top:20px;">No hay trámites pendientes.</p>';
         }
-
-        // Render adelantos
         adelantos.filter(a => a.estado === "Pendiente").forEach(a => {
             html += `
             <div style="background:#1e293b; padding:15px; border-radius:12px; margin-bottom:12px; border-left:4px solid #3b82f6;">
                 <p style="margin:0; color:#3b82f6; font-weight:bold;">💰 ADELANTO: $${a.monto}</p>
-                <p style="font-size:12px; color:#aaa; margin:5px 0;">${a.usuario || 'Empleado'} - ${a.motivo}</p>
+                <p style="font-size:12px; color:#aaa; margin:5px 0;">${a.nombre || 'Empleado'} - ${a.motivo}</p>
                 <div style="display:flex; gap:8px; margin-top:10px;">
                     <button onclick="responderSolicitud('adelanto', ${a.id}, 'Aprobado')" style="flex:1; background:#10b981; color:white; border:none; padding:8px; border-radius:6px; font-size:11px;">Aprobar</button>
                     <button onclick="responderSolicitud('adelanto', ${a.id}, 'Rechazado')" style="flex:1; background:#f43f5e; color:white; border:none; padding:8px; border-radius:6px; font-size:11px;">Rechazar</button>
@@ -873,7 +872,6 @@ function actualizarPanelGestion() {
             </div>`;
         });
     } 
-
     else if (VISTA_ACTUAL_GESTION === 'empleados') {
         html += `<button onclick="agregarNuevoElemento('empleado')" style="width:100%; background:#10b981; color:white; border:none; padding:12px; border-radius:10px; margin-bottom:15px; font-weight:bold;">+ AGREGAR EMPLEADO</button>`;
         EMPLEADOS.forEach((emp, i) => {
@@ -884,13 +882,12 @@ function actualizarPanelGestion() {
                     <small style="color:#64748b;">DNI: ${emp.dni} | Clave: ${emp.clave}</small>
                 </div>
                 <div style="display:flex; gap:12px;">
-                    <button onclick="editarElemento('empleado', ${i})" style="background:none; border:none; font-size:16px;">✏️</button>
-                    <button onclick="borrarElemento('empleado', ${i})" style="background:none; border:none; font-size:16px;">🗑️</button>
+                    <button onclick="editarEnNube('empleados', ${i}, '${emp.nombre}')" style="background:none; border:none; font-size:16px; cursor:pointer;">✏️</button>
+                    <button onclick="borrarElemento('empleado', ${i})" style="background:none; border:none; font-size:16px; cursor:pointer;">🗑️</button>
                 </div>
             </div>`;
         });
     }
-
     else if (VISTA_ACTUAL_GESTION === 'locales') {
         html += `<button onclick="agregarNuevoElemento('local')" style="width:100%; background:#3b82f6; color:white; border:none; padding:12px; border-radius:10px; margin-bottom:15px; font-weight:bold;">+ AGREGAR SUCURSAL</button>`;
         LOCALES.forEach((loc, i) => {
@@ -901,12 +898,12 @@ function actualizarPanelGestion() {
                     <small style="color:#64748b;">ID: ${i + 1}</small>
                 </div>
                 <div style="display:flex; gap:12px;">
-                    <button onclick="editarElemento('local', ${i})" style="background:none; border:none; font-size:16px;">✏️</button>
+                    <button onclick="editarEnNube('locales', ${i}, '${loc.n}')" style="background:none; border:none; font-size:16px; cursor:pointer;">✏️</button>
+                    <button onclick="borrarElemento('local', ${i})" style="background:none; border:none; font-size:16px; cursor:pointer;">🗑️</button>
                 </div>
             </div>`;
         });
     }
-
     contenedor.innerHTML = html;
 }
 
@@ -1562,6 +1559,38 @@ function descargarReciboReal(dni, mes) {
     }
 }
 
+// 1. Configuración de tu Nube (Firebase)
+const firebaseConfig = {
+  apiKey: "AIzaSyA7sqfQi-8YinzO1XzUgwkT1AH70OYnDP8",
+  authDomain: "rapitac-mjg.firebaseapp.com",
+  databaseURL: "https://rapitac-mjg-default-rtdb.firebaseio.com",
+  projectId: "rapitac-mjg",
+  storageBucket: "rapitac-mjg.firebasestorage.app",
+  messagingSenderId: "744159996185",
+  appId: "1:744159996185:web:13987be97cd55c79c5bd88"
+};
+
+// 2. Encendemos el motor
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// 3. Función para que el "Lapicito" guarde en la nube
+function editarEnNube(tipo, id, nombreActual) {
+    const nuevoNombre = prompt(`Editar ${tipo}:`, nombreActual);
+    
+    if (nuevoNombre && nuevoNombre.trim() !== "") {
+        // Esto busca la carpeta 'locales' o 'empleados' en Google y cambia el dato
+        db.ref(`${tipo}/${id}`).set({
+            nombre: nuevoNombre.trim()
+        }).then(() => {
+            alert("✅ Guardado en la nube. Todos los dispositivos verán el cambio.");
+            location.reload(); // Refrescamos para ver el nombre nuevo
+        }).catch((error) => {
+            console.error("Error al guardar:", error);
+            alert("Hubo un error al conectar con Google.");
+        });
+    }
+}
 
 window.onload = function() {
     const status = document.getElementById('status-text');

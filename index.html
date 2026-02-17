@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+
+<meta name="theme-color" content="#2c3e50">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icono-rapitac.png">  
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>RapiTac Pro v2</title>
@@ -1035,8 +1042,7 @@ function actualizarVistaVacaciones() {
         </div>
     `).join('');
 }
-
-function compartirFalta() {
+async function compartirFalta() {
     const fecha = document.getElementById('fecha-ausencia').value;
     const motivo = document.getElementById('motivo-ausencia').value;
     const comentario = document.getElementById('comentario-ausencia').value || "Sin comentarios adicionales";
@@ -1046,37 +1052,50 @@ function compartirFalta() {
         return; 
     }
 
-    // --- LÓGICA PARA EL NOMBRE DEL DÍA ---
-    const partes = fecha.split('-'); // AAAA-MM-DD
+    // --- LÓGICA DE FECHA (Igual a la anterior) ---
+    const partes = fecha.split('-'); 
     const fechaObj = new Date(partes[0], partes[1] - 1, partes[2], 12, 0, 0);
     const dias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
     const nombreDia = dias[fechaObj.getDay()];
     const fechaFormateada = `${partes[2]}/${partes[1]}/${partes[0]}`;
 
+    // Datos del usuario (MJG)
     const nombre = USER_INFO.nombre;
     const dni = USER_INFO.dni;
     const sucursal = USER_INFO.sucursal || "No especificada";
     
-    // NÚMERO DEL CEO (Asegurate que incluya código de país sin el +)
-    const telefonoCEO = "5491112345678"; 
+    // --- CONSTRUCCIÓN DEL MENSAJE PARA EL MOTOR NATIVO ---
+    const tituloMensaje = "AVISO DE AUSENCIA - RAPITAC";
+    const cuerpoMensaje = `📌 REPORTE DE INASISTENCIA\n` +
+                          `--------------------------\n` +
+                          `👤 Empleado: ${nombre}\n` +
+                          `🆔 DNI: ${dni}\n` +
+                          `🏢 Sucursal: ${sucursal}\n\n` +
+                          `📅 Día: ${nombreDia} ${fechaFormateada}\n` +
+                          `⚠️ Motivo: ${motivo}\n` +
+                          `💬 Nota: ${comentario}\n\n` +
+                          `📸 *Se adjunta comprobante por separado.*`;
 
-    const mensaje = `*AVISO DE AUSENCIA (RAPITAC)*%0A%0A` +
-                    `*Empleado:* ${nombre}%0A` +
-                    `*DNI:* ${dni}%0A` +
-                    `*Sucursal:* ${sucursal}%0A%0A` +
-                    `*Día:* ${nombreDia} ${fechaFormateada}%0A` +
-                    `*Motivo:* ${motivo}%0A` +
-                    `*Nota:* ${comentario}%0A%0A` +
-                    `_Adjunto comprobante a continuación._`;
-
-    const url = `https://wa.me/${telefonoCEO}?text=${mensaje}`;
-    
-    // Confirmación con el estilo de "botón con confirmación" que te gusta
-    if(confirm(`¿Confirmar envío del aviso para el día ${nombreDia} ${fechaFormateada}?`)) {
-        cerrarModalAusencia();
-        window.open(url, '_blank');
+    // --- ACTIVACIÓN DEL MOTOR NATIVO ---
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: tituloMensaje,
+                text: cuerpoMensaje
+                // Nota: Compartir archivos (como la foto) requiere una lógica más compleja de "Blob".
+                // Por ahora, enviamos el texto y el usuario adjunta la foto después.
+            });
+            cerrarModalAusencia();
+        } catch (error) {
+            console.log("El usuario canceló o hubo un error:", error);
+        }
+    } else {
+        // Fallback: Si el navegador es muy viejo, usamos WhatsApp Web como respaldo
+        const urlWhatsApp = `https://wa.me/?text=${encodeURIComponent(tituloMensaje + "\n\n" + cuerpoMensaje)}`;
+        window.open(urlWhatsApp, '_blank');
     }
 }
+
 
 // --- BLOQUE UNIFICADO DE LOCALES Y GPS ---
 
@@ -1488,6 +1507,15 @@ function editarLocal(index) {
         verSeccionMaestra('locales');
         alert("Sucursal actualizada correctamente.");
     }
+}
+
+
+  if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('SW registrado con éxito', reg))
+      .catch(err => console.warn('Error al registrar SW', err));
+  });
 }
 
 </script>

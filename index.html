@@ -579,6 +579,28 @@ function validar() {
                 </div>
             </div>`;
         
+        // --- INICIO BLOQUE: SINCRONIZACIÓN SILENCIOSA CON FIREBASE ---
+        // Esto sube los datos a la nube para que el "Lapicito" tenga qué editar.
+        if (typeof db !== 'undefined') {
+            // Sincronizamos el empleado que acaba de entrar
+            db.ref('empleados/' + USER_INFO.dni).update({
+                nombre: USER_INFO.nombre,
+                dni: USER_INFO.dni,
+                sucursal: USER_INFO.sucursal
+            });
+
+            // Si es el encargado (Vos), subimos la lista de sucursales
+            if (USER_INFO.dni === "300913") {
+                LOCALES.forEach((loc, index) => {
+                    db.ref('locales/' + index).update({
+                        n: loc.n,
+                        d: loc.d
+                    });
+                });
+            }
+        }
+        // --- FIN BLOQUE: SINCRONIZACIÓN ---
+
         // 5. NAVEGACIÓN
         mostrarSeccion('main-screen');
         
@@ -1578,17 +1600,25 @@ const db = firebase.database();
 function editarEnNube(tipo, id, nombreActual) {
     const nuevoNombre = prompt(`Editar ${tipo}:`, nombreActual);
     
-    if (nuevoNombre && nuevoNombre.trim() !== "") {
-        // Esto busca la carpeta 'locales' o 'empleados' en Google y cambia el dato
-        db.ref(`${tipo}/${id}`).set({
-            nombre: nuevoNombre.trim()
-        }).then(() => {
-            alert("✅ Guardado en la nube. Todos los dispositivos verán el cambio.");
-            location.reload(); // Refrescamos para ver el nombre nuevo
-        }).catch((error) => {
-            console.error("Error al guardar:", error);
-            alert("Hubo un error al conectar con Google.");
-        });
+    if (nuevoNombre && nuevoNombre.trim() !== "" && nuevoNombre !== nombreActual) {
+        // Referencia a la base de datos de Firebase
+        const ruta = db.ref(`${tipo}/${id}`);
+        
+        // Creamos el objeto de actualización
+        // Si es local usamos 'n' (nombre), si es empleado usamos 'nombre'
+        const datosActualizados = (tipo === 'locales') 
+            ? { n: nuevoNombre.trim() } 
+            : { nombre: nuevoNombre.trim() };
+
+        ruta.update(datosActualizados)
+            .then(() => {
+                alert("✅ Sincronizado con éxito. Los cambios se verán al recargar.");
+                location.reload(); // Recargamos para que impacte en las listas locales
+            })
+            .catch((error) => {
+                console.error("Error Firebase:", error);
+                alert("❌ Error al conectar con la nube. Verificá tu conexión.");
+            });
     }
 }
 

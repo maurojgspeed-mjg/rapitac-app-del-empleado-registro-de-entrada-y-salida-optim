@@ -688,13 +688,13 @@ async function confirmar(tipo) {
  // --- BLOQUE CORREGIDO: LISTADO DE REGISTROS ---
 function render() {
     const l = document.getElementById('list');
-    if (!l) return; // Seguridad por si el elemento no existe
+    if (!l) return; 
 
     // 1. Obtenemos todos los registros de la memoria
     const h = JSON.parse(localStorage.getItem('logs_rt')) || [];
     
     // 2. FILTRO DE SEGURIDAD: 
-    // Solo mostramos los registros que coincidan con el DNI del usuario activo
+    // Solo mostramos los registros del usuario activo
     const misRegistros = h.filter(r => r.dni === USER_INFO.dni);
 
     if(misRegistros.length === 0) {
@@ -706,9 +706,11 @@ function render() {
         return;
     }
 
-    // 3. Dibujamos solo mis registros con el diseño mejorado
-    // .reverse() para que el último movimiento (la marca más nueva) aparezca arriba de todo
-    l.innerHTML = misRegistros.reverse().map(r => {
+    // 3. PRIORIDAD SUPERIOR Y CARGA DE 10 REGISTROS
+    // Invertimos la lista para que el más nuevo esté arriba y tomamos los primeros 10
+    const registrosVisibles = misRegistros.slice().reverse().slice(0, 10);
+
+    l.innerHTML = registrosVisibles.map(r => {
         const botonMapa = (r.mapa && r.mapa.includes('http')) 
             ? `<a href="${r.mapa}" target="_blank" style="text-decoration:none; margin-left:10px; font-size:18px;">📍</a>` 
             : '';

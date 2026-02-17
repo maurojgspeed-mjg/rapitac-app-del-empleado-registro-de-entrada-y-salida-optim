@@ -681,9 +681,11 @@ async function confirmar(tipo) {
         tipo, 
         nombre: USER_INFO.nombre, 
         dni: USER_INFO.dni, 
-        sucursal: USER_INFO.sucursal, 
+        // Sellamos la sucursal actual para que no cambie después
+        sucursal: USER_INFO.sucursal || "No Especificada", 
         fecha: fechaLimpia, 
         hora: ahora.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'}),
+        // Aquí nos aseguramos de que el link sea el que generó obtenerCoordenadas
         mapa: mapaUrl 
     };
     
@@ -794,7 +796,8 @@ function render() {
             </div>`).join('');
 }
 
-   // --- BLOQUE ACTUALIZADO: ACCESO DE SEGURIDAD ---
+// --- BLOQUE MAESTRO UNIFICADO (v59 - MJG) ---
+
 function accesoEncargado() {
     const pass = prompt("SISTEMA DE SEGURIDAD\nIngrese Clave de Acceso:");
     if (!pass) return;
@@ -802,25 +805,22 @@ function accesoEncargado() {
     const titulo = document.getElementById('titulo-panel');
 
     if (pass === "300913") {
-        // MODO DESARROLLADOR: Acceso Total
         USER_INFO.rol = "MASTER";
-        titulo.innerText = "🛠️ MODO DESARROLLADOR";
+        titulo.innerText = "🛠️ MODO DESARROLLADOR (MJG)";
         titulo.style.color = "#ef4444"; 
         abrirGestion();
     } 
     else if (pass === "2026") {
-        // MODO CEO: Gestión y Reportes
         USER_INFO.rol = "CEO";
         titulo.innerText = "📊 PANEL DE GESTIÓN CEO";
         titulo.style.color = "#3b82f6";
         abrirGestion();
     } 
     else if (pass === "999") {
-        // MODO ENCARGADO: Limpieza de registros (según lo acordado en Huella Segura)
-        if(confirm("¿Desea realizar el mantenimiento y limpiar registros antiguos?")) {
-            localStorage.removeItem('logs_rt');
-            alert("Mantenimiento realizado con éxito.");
-            render();
+        if(confirm("¿Desea realizar mantenimiento y limpiar registros locales?")) {
+            localStorage.clear();
+            alert("Sistema reseteado. Los datos fijos del código se mantendrán.");
+            location.reload();
         }
     } 
     else {
@@ -833,65 +833,154 @@ function abrirGestion() {
     mostrarSeccion('panel-encargado');
     actualizarPanelGestion();
 }
-    
-    function actualizarPanelGestion() {
-        const contenedor = document.getElementById('lista-gestion');
+
+// --- NUEVO CENTRO DE CONTROL UNIFICADO (v59) ---
+
+let VISTA_ACTUAL_GESTION = 'solicitudes'; // Estado inicial
+
+function actualizarPanelGestion() {
+    const contenedor = document.getElementById('lista-gestion');
+    if (!contenedor) return;
+    let html = "";
+
+    // 1. PESTAÑAS DE NAVEGACIÓN (Diseño moderno)
+    html += `
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-bottom:20px; background:#0f172a; padding:5px; border-radius:12px;">
+        <button onclick="cambiarVistaGestion('solicitudes')" style="background:${VISTA_ACTUAL_GESTION === 'solicitudes' ? 'var(--accent)' : 'transparent'}; color:white; border:none; padding:10px; border-radius:8px; font-size:10px; font-weight:bold; transition:0.3s;">SOLICITUDES</button>
+        <button onclick="cambiarVistaGestion('empleados')" style="background:${VISTA_ACTUAL_GESTION === 'empleados' ? 'var(--accent)' : 'transparent'}; color:white; border:none; padding:10px; border-radius:8px; font-size:10px; font-weight:bold; transition:0.3s;">EMPLEADOS</button>
+        <button onclick="cambiarVistaGestion('locales')" style="background:${VISTA_ACTUAL_GESTION === 'locales' ? 'var(--accent)' : 'transparent'}; color:white; border:none; padding:10px; border-radius:8px; font-size:10px; font-weight:bold; transition:0.3s;">LOCALES</button>
+    </div>`;
+
+    // 2. CONTENIDO DINÁMICO SEGÚN LA PESTAÑA
+    if (VISTA_ACTUAL_GESTION === 'solicitudes') {
         const adelantos = JSON.parse(localStorage.getItem('adelantos_rapitac')) || [];
         const vacas = JSON.parse(localStorage.getItem('vacaciones_rapitac')) || [];
-        let html = "";
-
-        // Listar Adelantos
-        adelantos.forEach(a => {
-            if(a.estado === "Pendiente") {
-                html += `
-                <div style="background: #1e293b; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #3b82f6;">
-                    <p style="margin:0; color:#3b82f6; font-weight:bold;">💰 ADELANTO: $${a.monto}</p>
-                    <p style="font-size:12px; color:#aaa; margin: 5px 0;">Motivo: ${a.motivo}</p>
-                    <button onclick="responderSolicitud('adelanto', ${a.id}, 'Aprobado')" style="background:#10b981; color:white; border:none; padding:8px; border-radius:5px; margin-right:5px;">Aprobar</button>
-                    <button onclick="responderSolicitud('adelanto', ${a.id}, 'Rechazado')" style="background:#f43f5e; color:white; border:none; padding:8px; border-radius:5px;">Rechazar</button>
-                </div>`;
-            }
-        });
-
-        // Listar Vacaciones
-        vacas.forEach(v => {
-            if(v.estado === "Pendiente") {
-                html += `
-                <div style="background: #1e293b; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #10b981;">
-                    <p style="margin:0; color:#10b981; font-weight:bold;">🏖️ VACACIONES</p>
-                    <p style="font-size:12px; color:#aaa; margin: 5px 0;">Desde: ${v.desde} Hasta: ${v.hasta}</p>
-                    <button onclick="responderSolicitud('vaca', ${v.id}, 'Aprobado')" style="background:#10b981; color:white; border:none; padding:8px; border-radius:5px; margin-right:5px;">Aprobar</button>
-                    <button onclick="responderSolicitud('vaca', ${v.id}, 'Rechazado')" style="background:#f43f5e; color:white; border:none; padding:8px; border-radius:5px;">Rechazar</button>
-                </div>`;
-            }
-        });
-
-        contenedor.innerHTML = html || '<p style="text-align:center; color:#64748b; margin-top:20px;">No hay trámites pendientes.</p>';
-    }
-
-    function responderSolicitud(tipo, id, nuevoEstado) {
-        const msj = prompt("Mensaje de respuesta:", nuevoEstado === 'Aprobado' ? "Solicitud aprobada." : "No es posible en este momento.");
-        if (msj === null) return;
-
-        if(tipo === 'adelanto') {
-            let lista = JSON.parse(localStorage.getItem('adelantos_rapitac'));
-            lista = lista.map(item => item.id === id ? {...item, estado: nuevoEstado, respuesta: msj} : item);
-            localStorage.setItem('adelantos_rapitac', JSON.stringify(lista));
-        } else {
-            let lista = JSON.parse(localStorage.getItem('vacaciones_rapitac'));
-            lista = lista.map(item => {
-                if(item.id === id) {
-                    if(nuevoEstado === 'Aprobado') document.getElementById('dias-restantes').innerText = "0";
-                    return {...item, estado: nuevoEstado, respuesta: msj};
-                }
-                return item;
-            });
-            localStorage.setItem('vacaciones_rapitac', JSON.stringify(lista));
+        
+        if (adelantos.length === 0 && vacas.length === 0) {
+            html += '<p style="text-align:center; opacity:0.4; margin-top:20px;">No hay trámites pendientes.</p>';
         }
-        actualizarPanelGestion();
-        alert("Respuesta enviada.");
+
+        // Render adelantos
+        adelantos.filter(a => a.estado === "Pendiente").forEach(a => {
+            html += `
+            <div style="background:#1e293b; padding:15px; border-radius:12px; margin-bottom:12px; border-left:4px solid #3b82f6;">
+                <p style="margin:0; color:#3b82f6; font-weight:bold;">💰 ADELANTO: $${a.monto}</p>
+                <p style="font-size:12px; color:#aaa; margin:5px 0;">${a.usuario || 'Empleado'} - ${a.motivo}</p>
+                <div style="display:flex; gap:8px; margin-top:10px;">
+                    <button onclick="responderSolicitud('adelanto', ${a.id}, 'Aprobado')" style="flex:1; background:#10b981; color:white; border:none; padding:8px; border-radius:6px; font-size:11px;">Aprobar</button>
+                    <button onclick="responderSolicitud('adelanto', ${a.id}, 'Rechazado')" style="flex:1; background:#f43f5e; color:white; border:none; padding:8px; border-radius:6px; font-size:11px;">Rechazar</button>
+                </div>
+            </div>`;
+        });
+    } 
+
+    else if (VISTA_ACTUAL_GESTION === 'empleados') {
+        html += `<button onclick="agregarNuevoElemento('empleado')" style="width:100%; background:#10b981; color:white; border:none; padding:12px; border-radius:10px; margin-bottom:15px; font-weight:bold;">+ AGREGAR EMPLEADO</button>`;
+        EMPLEADOS.forEach((emp, i) => {
+            html += `
+            <div style="background:#1e293b; padding:12px; border-radius:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; border:1px solid #334155;">
+                <div>
+                    <b style="display:block; font-size:14px;">${emp.nombre}</b>
+                    <small style="color:#64748b;">DNI: ${emp.dni} | Clave: ${emp.clave}</small>
+                </div>
+                <div style="display:flex; gap:12px;">
+                    <button onclick="editarElemento('empleado', ${i})" style="background:none; border:none; font-size:16px;">✏️</button>
+                    <button onclick="borrarElemento('empleado', ${i})" style="background:none; border:none; font-size:16px;">🗑️</button>
+                </div>
+            </div>`;
+        });
     }
 
+    else if (VISTA_ACTUAL_GESTION === 'locales') {
+        html += `<button onclick="agregarNuevoElemento('local')" style="width:100%; background:#3b82f6; color:white; border:none; padding:12px; border-radius:10px; margin-bottom:15px; font-weight:bold;">+ AGREGAR SUCURSAL</button>`;
+        LOCALES.forEach((loc, i) => {
+            html += `
+            <div style="background:#1e293b; padding:12px; border-radius:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; border:1px solid #334155;">
+                <div>
+                    <b style="display:block; font-size:14px;">${loc.n}</b>
+                    <small style="color:#64748b;">ID: ${i + 1}</small>
+                </div>
+                <div style="display:flex; gap:12px;">
+                    <button onclick="editarElemento('local', ${i})" style="background:none; border:none; font-size:16px;">✏️</button>
+                </div>
+            </div>`;
+        });
+    }
+
+    contenedor.innerHTML = html;
+}
+
+// FUNCIONES COMPLEMENTARIAS (Pegarlas debajo de actualizarPanelGestion)
+function cambiarVistaGestion(vista) {
+    VISTA_ACTUAL_GESTION = vista;
+    actualizarPanelGestion();
+}
+
+function editarElemento(tipo, index) {
+    if (tipo === 'empleado') {
+        const n = prompt("Nombre completo:", EMPLEADOS[index].nombre);
+        const c = prompt("Nueva clave:", EMPLEADOS[index].clave);
+        if (n && c) {
+            EMPLEADOS[index].nombre = n;
+            EMPLEADOS[index].clave = c;
+        }
+    } else {
+        const n = prompt("Nombre de la sucursal:", LOCALES[index].n);
+        if (n) {
+            LOCALES[index].n = n;
+        }
+    }
+    
+    guardarBaseDatos(); // <--- ESTO GUARDA EL CAMBIO EN EL TELÉFONO
+    actualizarPanelGestion();
+    alert("¡Cambio aplicado y guardado!");
+}
+
+function borrarElemento(tipo, index) {
+    if (confirm("¿Estás seguro de eliminar este registro?")) {
+        if (tipo === 'empleado') {
+            EMPLEADOS.splice(index, 1);
+        }
+        guardarBaseDatos(); // <--- ESTO GUARDA EL CAMBIO EN EL TELÉFONO
+        actualizarPanelGestion();
+    }
+}
+
+// NUEVA FUNCIÓN: Guarda las listas en la memoria del navegador
+function guardarBaseDatos() {
+    localStorage.setItem('EMPLEADOS_RT', JSON.stringify(EMPLEADOS));
+    localStorage.setItem('LOCALES_RT', JSON.stringify(LOCALES));
+}
+// --- FUNCIONES MAESTRAS DE EDICIÓN ---
+
+function abrirMaestro(tipo) {
+    const data = (tipo === 'empleados') ? EMPLEADOS : LOCALES;
+    let listado = `<h3 style="color:white; margin-bottom:15px;">Gestionar ${tipo}</h3>`;
+    
+    data.forEach((item, index) => {
+        listado += `
+        <div style="background:#0f172a; padding:10px; border-radius:8px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; border:1px solid #334155;">
+            <span style="font-size:13px;">${item.nombre || item.n}</span>
+            <div>
+                <button onclick="editarItem('${tipo}', ${index})" style="background:none; border:none; color:#3b82f6; cursor:pointer;">✏️</button>
+                <button onclick="borrarItem('${tipo}', ${index})" style="background:none; border:none; color:#f43f5e; cursor:pointer;">🗑️</button>
+            </div>
+        </div>`;
+    });
+
+    const win = window.open("", "_blank", "width=400,height=600");
+    win.document.write(`<html><body style="background:#1e293b; color:white; font-family:sans-serif; padding:20px;">${listado}</body></html>`);
+}
+
+function verMapaCalor() {
+    alert("🔥 Generando Mapa de Densidad...\nBuscando concentraciones de marcas por zona.");
+    // Aquí se integrará la lógica visual en la v60
+}
+
+function exportarExcel() {
+    alert("📄 Preparando planilla Excel...\nExtrayendo logs de entrada/salida.");
+    // Simulación de exportación
+}
     function copiar() {
     const h = JSON.parse(localStorage.getItem('logs_rt')) || [];
     if (h.length === 0) return alert("No hay registros para copiar.");
@@ -1118,19 +1207,20 @@ async function obtenerCoordenadas() {
     return new Promise((resolve) => {
         if (!navigator.geolocation) {
             resolve("No soportado");
+            return; // Añadido para frenar la ejecución si no hay GPS
         }
         navigator.geolocation.getCurrentPosition(
             (pos) => {
                 const lat = pos.coords.latitude;
                 const lon = pos.coords.longitude;
-                // Usamos backticks `` para que las variables ${lat} y ${lon} funcionen
+                // URL corregida: ahora usa HTTPS y el formato estándar de Google Maps
                 resolve(`https://www.google.com/maps?q=${lat},${lon}`);
             },
             (error) => {
                 console.warn("Error de GPS:", error);
                 resolve("Sin permiso de GPS");
             },
-            { enableHighAccuracy: true, timeout: 5000 }
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 } // Subí el tiempo a 8s por si el celular es lento
         );
     });
 }
@@ -1192,6 +1282,8 @@ function abrirArt() {
     }
 }
 
+// --- MÓDULO UNIFICADO DE AUSENCIAS (MOTOR NATIVO) ---
+
 // 1. ABRE EL MODAL DE AUSENCIA
 function notificarAusencia() {
     if (!USER_INFO || !USER_INFO.nombre) {
@@ -1211,53 +1303,47 @@ function cerrarModalAusencia() {
     document.getElementById('modal-ausencia').style.display = 'none';
 }
 
-// 3. ENVÍA EL WHATSAPP CON LOS DATOS DEL FORMULARIO
-function enviarAusenciaFinal() {
+// 3. ENVÍA EL REPORTE USANDO EL MOTOR DEL TELÉFONO
+async function enviarAusenciaFinal() {
     const fecha = document.getElementById('fecha-ausencia').value;
     const motivo = document.getElementById('motivo-ausencia').value;
+    const comentario = document.getElementById('comentario-ausencia').value || "Sin notas adicionales";
     
-    if(!fecha) { alert("Por favor seleccioná una fecha."); return; }
+    if(!fecha) { 
+        alert("Por favor seleccioná una fecha."); 
+        return; 
+    }
 
-    const nombre = USER_INFO.nombre;
-    const dni = USER_INFO.dni;
-    const sucursal = USER_INFO.sucursal || "Merlo (Pruebas)";
-    
-    // CAMBIÁ ESTE NÚMERO POR EL DEL CEO
-    const telefonoCEO = "5491112345678"; 
-    
-    // Formateamos la fecha de AAAA-MM-DD a DD/MM/AAAA
+    // Formateamos la fecha a DD/MM/AAAA para que sea legible
     const fechaFormateada = fecha.split('-').reverse().join('/');
 
-    const mensaje = `*AVISO DE AUSENCIA (RAPITAC)*%0A%0A` +
-                    `*Empleado:* ${nombre}%0A` +
-                    `*DNI:* ${dni}%0A` +
-                    `*Sucursal:* ${sucursal}%0A` +
-                    `*Fecha Ausencia:* ${fechaFormateada}%0A` +
-                    `*Motivo:* ${motivo}%0A%0A` +
-                    `_Adjunto comprobante a continuación._`;
+    // Construimos el cuerpo del mensaje profesional para RapiTac
+    const cuerpoMensaje = `📌 REPORTE DE INASISTENCIA\n` +
+                          `--------------------------\n` +
+                          `👤 Empleado: ${USER_INFO.nombre}\n` +
+                          `🆔 DNI: ${USER_INFO.dni}\n` +
+                          `🏢 Sucursal: ${USER_INFO.sucursal || "No asignada"}\n\n` +
+                          `📅 Fecha: ${fechaFormateada}\n` +
+                          `⚠️ Motivo: ${motivo}\n` +
+                          `💬 Nota: ${comentario}\n\n` +
+                          `📸 *Se adjunta comprobante a continuación.*`;
 
-    const url = `https://wa.me/${telefonoCEO}?text=${mensaje}`;
-    
-    // Generamos un pequeño reporte en consola por seguridad
-    console.log("Ausencia notificada:", {nombre, fecha, motivo});
-    
-    cerrarModalAusencia();
-    window.open(url, '_blank');
-}
-
-// 4. COMPARTIR EL COMPROBANTE (Se mantiene para otras Apps)
-function compartirFalta() {
-    const texto = `REPORTE DE AUSENCIA - RAPITAC\n` +
-                  `Empleado: ${USER_INFO.nombre}\n` +
-                  `DNI: ${USER_INFO.dni}\n` +
-                  `Fecha Reporte: ${new Date().toLocaleDateString()}\n` +
-                  `Estado: Notificado al CEO.`;
-                  
+    // ACTIVACIÓN DEL MOTOR NATIVO (Permite elegir App y adjuntar fotos)
     if (navigator.share) {
-        navigator.share({ title: 'Comprobante de Ausencia', text: texto });
+        try {
+            await navigator.share({
+                title: 'Aviso de Ausencia - RapiTac',
+                text: cuerpoMensaje
+            });
+            cerrarModalAusencia();
+        } catch (error) {
+            console.log("El usuario canceló el envío.");
+        }
     } else {
-        navigator.clipboard.writeText(texto);
-        alert("Comprobante de reporte copiado al portapapeles.");
+        // Fallback para navegadores que no soportan Share API
+        const urlFallback = `https://wa.me/?text=${encodeURIComponent(cuerpoMensaje)}`;
+        window.open(urlFallback, '_blank');
+        cerrarModalAusencia();
     }
 }
 
@@ -1404,34 +1490,76 @@ function verMiCredencial() {
     document.body.appendChild(modalCred);
 }
 function abrirRecibos() {
-    // Creamos un modal simple para ver el listado
+    if (!USER_INFO || !USER_INFO.dni) return alert("Inicie sesión");
+
+    const dni = USER_INFO.dni.toString().trim();
+    const añoActual = new Date().getFullYear(); // Detecta si es 2026, 2027, etc.
+
+    // Lista de meses y conceptos
+    const conceptos = [
+        { id: "enero", n: "Enero" },
+        { id: "febrero", n: "Febrero" },
+        { id: "marzo", n: "Marzo" },
+        { id: "abril", n: "Abril" },
+        { id: "mayo", n: "Mayo" },
+        { id: "sac_1", n: "🔥 1er SAC (Aguinaldo)" },
+        { id: "junio", n: "Junio" },
+        { id: "julio", n: "Julio" },
+        { id: "agosto", n: "Agosto" },
+        { id: "septiembre", n: "Septiembre" },
+        { id: "octubre", n: "Octubre" },
+        { id: "noviembre", n: "Noviembre" },
+        { id: "sac_2", n: "🔥 2do SAC (Aguinaldo)" },
+        { id: "diciembre", n: "Diciembre" }
+    ];
+
     const modal = document.createElement('div');
     modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.95); z-index:3000; padding:20px; color:white; overflow-y:auto;";
     
+    // Generamos los botones. El nombre del archivo buscado será: DNI_mes_año.pdf
+    let listadoHtml = conceptos.map(c => `
+        <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; border: 1px solid rgba(255,255,255,0.1);">
+            <div>
+                <b style="display:block; font-size:14px;">${c.n} ${añoActual}</b>
+                <small style="color:#10b981;">Recibo Digital</small>
+            </div>
+            <button onclick="descargarReciboUniversal('${dni}', '${c.id}', '${añoActual}')" 
+                    style="background:var(--accent); border:none; color:white; padding:10px 15px; border-radius:8px; font-weight:bold; cursor:pointer;">
+                Ver
+            </button>
+        </div>
+    `).reverse().join(''); 
+
     modal.innerHTML = `
         <div style="max-width:400px; margin: 0 auto;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
-                <h2 style="margin:0; color:var(--accent);">Mis Recibos</h2>
+                <h2 style="margin:0; color:var(--accent);">Mis Recibos ${añoActual}</h2>
                 <button onclick="this.parentElement.parentElement.parentElement.remove()" style="background:none; border:none; color:white; font-size:24px;">✕</button>
             </div>
-            
-            <p style="font-size:12px; opacity:0.7; margin-bottom:20px;">Los recibos están ordenados por fecha de carga.</p>
-
-            <div id="lista-recibos-container">
-                <div style="background:#1e293b; padding:15px; border-radius:12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid #334155;">
-                    <div>
-                        <b style="display:block;">Enero 2026</b>
-                        <small style="color:#10b981;">Disponible para descargar</small>
-                    </div>
-                    <button style="background:var(--accent); border:none; color:white; padding:8px 12px; border-radius:8px;">Ver PDF</button>
-                </div>
-                
-                <p style="text-align:center; margin-top:30px; opacity:0.5;">No hay más recibos cargados.</p>
-            </div>
+            <div id="lista-recibos-container">${listadoHtml}</div>
         </div>
     `;
-    
     document.body.appendChild(modal);
+}
+
+// Función de descarga que incluye el año en el nombre del archivo
+function descargarReciboUniversal(dni, mes, año) {
+    const ruta = `./docs/recibos/${dni}_${mes}_${año}.pdf`;
+    window.open(ruta, '_blank');
+}
+
+// Función técnica para ejecutar la descarga o apertura del PDF
+function descargarReciboReal(dni, mes) {
+    // La ruta donde debés subir los archivos: ./docs/recibos/
+    const rutaArchivo = `./docs/recibos/${dni}_${mes}.pdf`;
+    
+    // Abrimos en pestaña nueva
+    const win = window.open(rutaArchivo, '_blank');
+    
+    // Verificación de cortesía si el archivo no existe (solo funciona en algunos navegadores)
+    if (!win || win.closed || typeof win.closed == 'undefined') {
+        alert("⚠️ Si el recibo no abre, verificá que el archivo '" + dni + "_" + mes + ".pdf' esté cargado en el servidor.");
+    }
 }
 
 

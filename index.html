@@ -245,6 +245,32 @@
 }
     </style>
 </head>
+<div id="modal-ausencia" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:var(--bg-card); border:2px solid var(--accent); border-radius:20px; width:100%; max-width:400px; padding:25px; color:white;">
+        <h3 style="margin-top:0; color:var(--accent);">Notificar Ausencia</h3>
+        
+        <label style="display:block; margin-bottom:8px; font-size:14px;">Fecha de la ausencia:</label>
+        <input type="date" id="fecha-ausencia" style="width:100%; padding:10px; border-radius:10px; border:1px solid #444; background:#222; color:white; margin-bottom:15px;">
+
+        <label style="display:block; margin-bottom:8px; font-size:14px;">Motivo:</label>
+        <select id="motivo-ausencia" style="width:100%; padding:10px; border-radius:10px; border:1px solid #444; background:#222; color:white; margin-bottom:15px;">
+            <option value="Médico (Certificado adjunto)">Médico (Con certificado)</option>
+            <option value="Trámite Personal">Trámite Personal</option>
+            <option value="Razones Familiares">Asuntos Familiares</option>
+            <option value="Duelo / Fuerza Mayor">Licencia por Duelo</option>
+        </select>
+
+        <label style="display:block; margin-bottom:8px; font-size:14px;">Foto del comprobante/DNI:</label>
+        <input type="file" id="foto-comprobante" accept="image/*" capture="camera" style="width:100%; margin-bottom:20px; font-size:12px;">
+
+        <div style="display:flex; gap:10px;">
+            <button onclick="cerrarModalAusencia()" style="flex:1; padding:12px; border-radius:10px; border:none; background:#444; color:white; cursor:pointer;">Cancelar</button>
+            <button onclick="enviarAusenciaFinal()" style="flex:1; padding:12px; border-radius:10px; border:none; background:var(--accent); color:white; cursor:pointer; font-weight:bold;">Siguiente ➔</button>
+        </div>
+        <p style="font-size:10px; color:#aaa; margin-top:15px; text-align:center;">* WhatsApp no permite adjuntar la foto automáticamente. Al abrirse el chat, por favor adjuntá la última foto de tu galería.</p>
+    </div>
+</div>
+
 <body>
 <div id="splash-screen">
     <div style="text-align: center;">
@@ -416,7 +442,12 @@
 
     <div style="flex-grow: 1; overflow-y: auto; padding: 10px;">
         <div class="card-legajo" style="text-align: center; background: linear-gradient(180deg, rgba(59, 130, 246, 0.1) 0%, rgba(15, 23, 42, 0.5) 100%);">
-            <img id="legajo-foto" class="foto-perfil-js" src="./img/perfiles/27743971_foto.jpg" alt="Perfil" style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--accent); object-fit: cover; margin-bottom: 15px;">
+            <img id="legajo-foto" 
+     class="foto-perfil-js" 
+     src="./img/perfiles/27743971_foto.jpg" 
+     onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=27743971'"
+     alt="Perfil" 
+     style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--accent); object-fit: cover; margin-bottom: 15px;">
                  style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--accent); object-fit: cover; margin-bottom: 15px;">
             <h2 id="legajo-nombre-full" style="margin: 0; font-size: 24px;">-</h2>
             <p id="legajo-id" style="color: var(--accent); font-weight: bold; margin: 5px 0;">ID: -</p>
@@ -575,10 +606,31 @@ function cambiarSucursal() {
     }
 }
 
-    function toggleMenu() {
-        const d = document.getElementById('drawer');
-        d.style.right = (d.style.right === '0px') ? '-100%' : '0px';
+   function toggleMenu() {
+    const d = document.getElementById('drawer');
+    const isOpen = d.style.right === '0px';
+    
+    // 1. Animación del menú
+    d.style.right = isOpen ? '-100%' : '0px';
+
+    // 2. Si el menú se está abriendo, forzamos la actualización de datos
+    if (!isOpen && USER_INFO && USER_INFO.dni) {
+        // Actualizamos la foto
+        const imgMenu = document.getElementById('legajo-foto');
+        if (imgMenu) {
+            imgMenu.src = `./img/perfiles/${USER_INFO.dni}_foto.jpg`;
+        }
+
+        // Actualizamos Nombre y Sucursal en el menú (por si acaso)
+        const nomMenu = document.getElementById('legajo-nombre-full');
+        const sucMenu = document.getElementById('legajo-sucursal');
+        
+        if (nomMenu) nomMenu.innerText = USER_INFO.nombre;
+        if (sucMenu) sucMenu.innerText = USER_INFO.sucursal || "Merlo";
+        
+        console.log("Datos del menú sincronizados para:", USER_INFO.nombre);
     }
+}
 
     
 async function confirmar(tipo) {
@@ -1057,21 +1109,72 @@ function abrirArt() {
     }
 }
 
+// 1. ABRE EL MODAL DE AUSENCIA
 function notificarAusencia() {
-    const motivo = prompt("Ingrese el motivo de la ausencia (Médico, Trámite, etc.):");
-    if(!motivo) return;
+    if (!USER_INFO || !USER_INFO.nombre) {
+        alert("Error: Inicie sesión para notificar.");
+        return;
+    }
+    document.getElementById('modal-ausencia').style.display = 'flex';
     
-    const texto = `Hola, soy ${USER_INFO.nombre} (DNI: ${USER_INFO.dni}). Informo que por razones de ${motivo} no podré presentarme hoy ${new Date().toLocaleDateString()}.`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
+    // Ponemos la fecha de mañana por defecto como sugerencia
+    const mañana = new Date();
+    mañana.setDate(mañana.getDate() + 1);
+    document.getElementById('fecha-ausencia').value = mañana.toISOString().split('T')[0];
 }
 
+// 2. CIERRA EL MODAL
+function cerrarModalAusencia() {
+    document.getElementById('modal-ausencia').style.display = 'none';
+}
+
+// 3. ENVÍA EL WHATSAPP CON LOS DATOS DEL FORMULARIO
+function enviarAusenciaFinal() {
+    const fecha = document.getElementById('fecha-ausencia').value;
+    const motivo = document.getElementById('motivo-ausencia').value;
+    
+    if(!fecha) { alert("Por favor seleccioná una fecha."); return; }
+
+    const nombre = USER_INFO.nombre;
+    const dni = USER_INFO.dni;
+    const sucursal = USER_INFO.sucursal || "Merlo (Pruebas)";
+    
+    // CAMBIÁ ESTE NÚMERO POR EL DEL CEO
+    const telefonoCEO = "5491112345678"; 
+    
+    // Formateamos la fecha de AAAA-MM-DD a DD/MM/AAAA
+    const fechaFormateada = fecha.split('-').reverse().join('/');
+
+    const mensaje = `*AVISO DE AUSENCIA (RAPITAC)*%0A%0A` +
+                    `*Empleado:* ${nombre}%0A` +
+                    `*DNI:* ${dni}%0A` +
+                    `*Sucursal:* ${sucursal}%0A` +
+                    `*Fecha Ausencia:* ${fechaFormateada}%0A` +
+                    `*Motivo:* ${motivo}%0A%0A` +
+                    `_Adjunto comprobante a continuación._`;
+
+    const url = `https://wa.me/${telefonoCEO}?text=${mensaje}`;
+    
+    // Generamos un pequeño reporte en consola por seguridad
+    console.log("Ausencia notificada:", {nombre, fecha, motivo});
+    
+    cerrarModalAusencia();
+    window.open(url, '_blank');
+}
+
+// 4. COMPARTIR EL COMPROBANTE (Se mantiene para otras Apps)
 function compartirFalta() {
-    const texto = `REPORTE DE AUSENCIA - RAPITAC\nEmpleado: ${USER_INFO.nombre}\nDNI: ${USER_INFO.dni}\nFecha: ${new Date().toLocaleDateString()}\nEstado: Notificado via App.`;
+    const texto = `REPORTE DE AUSENCIA - RAPITAC\n` +
+                  `Empleado: ${USER_INFO.nombre}\n` +
+                  `DNI: ${USER_INFO.dni}\n` +
+                  `Fecha Reporte: ${new Date().toLocaleDateString()}\n` +
+                  `Estado: Notificado al CEO.`;
+                  
     if (navigator.share) {
-        navigator.share({ title: 'Aviso de Ausencia', text: texto });
+        navigator.share({ title: 'Comprobante de Ausencia', text: texto });
     } else {
         navigator.clipboard.writeText(texto);
-        alert("Comprobante copiado.");
+        alert("Comprobante de reporte copiado al portapapeles.");
     }
 }
 

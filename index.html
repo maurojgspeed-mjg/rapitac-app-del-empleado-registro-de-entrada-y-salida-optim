@@ -445,10 +445,9 @@
             <img id="legajo-foto" 
      class="foto-perfil-js" 
      src="./img/perfiles/27743971_foto.jpg" 
-     onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=27743971'"
+     onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=27743971'" 
      alt="Perfil" 
-     style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--accent); object-fit: cover; margin-bottom: 15px;">
-                 style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--accent); object-fit: cover; margin-bottom: 15px;">
+     style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--accent); object-fit: cover; margin-bottom: 15px;">
             <h2 id="legajo-nombre-full" style="margin: 0; font-size: 24px;">-</h2>
             <p id="legajo-id" style="color: var(--accent); font-weight: bold; margin: 5px 0;">ID: -</p>
         </div>
@@ -469,10 +468,9 @@
 
         <div class="drawer-header">Documentación & ART</div>
 
-<div class="drawer-item" onclick="verCredencialFoto()" style="border-left: 4px solid var(--accent); cursor:pointer;">
-    <span style="margin-right: 10px;">💳</span> 
-    <span>Mi Credencial ART (Foto)</span>
-</div>
+<button onclick="verMiCredencial()" style="background:var(--accent); color:white; border:none; padding:12px; border-radius:10px; width:100%; font-weight:bold; cursor:pointer;">
+    🪪 Mi Credencial Digital
+</button>
 
 <div class="drawer-item" onclick="descargarDocumento('alta')" style="cursor:pointer;">
     <i class="fas fa-file-contract" style="margin-right: 10px; color: #a5b4fc;"></i>
@@ -686,37 +684,56 @@ async function confirmar(tipo) {
  // --- BLOQUE CORREGIDO: LISTADO DE REGISTROS ---
 function render() {
     const l = document.getElementById('list');
+    if (!l) return; // Seguridad por si el elemento no existe
+
     // 1. Obtenemos todos los registros de la memoria
     const h = JSON.parse(localStorage.getItem('logs_rt')) || [];
     
     // 2. FILTRO DE SEGURIDAD: 
-    // Solo mostramos los registros que coincidan con el DNI del usuario que inició sesión
+    // Solo mostramos los registros que coincidan con el DNI del usuario activo
     const misRegistros = h.filter(r => r.dni === USER_INFO.dni);
 
     if(misRegistros.length === 0) {
-        l.innerHTML = '<p style="text-align:center; opacity:0.5; margin-top:20px;">No hay registros personales.</p>';
+        l.innerHTML = `
+            <div style="text-align:center; padding:40px; opacity:0.6;">
+                <div style="font-size:40px; margin-bottom:10px;">📋</div>
+                <p>No hay registros personales cargados aún.</p>
+            </div>`;
         return;
     }
 
-    // 3. Dibujamos solo mis registros (usando tu diseño original)
-    // Usamos .reverse() para que el último fichaje aparezca primero arriba
+    // 3. Dibujamos solo mis registros con el diseño mejorado
+    // .reverse() para que el último movimiento (la marca más nueva) aparezca arriba de todo
     l.innerHTML = misRegistros.reverse().map(r => {
         const botonMapa = (r.mapa && r.mapa.includes('http')) 
-            ? `<a href="${r.mapa}" target="_blank" style="text-decoration:none; margin-left:8px; font-size:18px;">📍</a>` 
+            ? `<a href="${r.mapa}" target="_blank" style="text-decoration:none; margin-left:10px; font-size:18px;">📍</a>` 
             : '';
 
         return `
-            <div style="background: white; color: #333; border-radius: 12px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+            <div style="background: white; color: #333; border-radius: 14px; padding: 15px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); border: 1px solid #f1f5f9; animation: slideIn 0.3s ease-out;">
+                
                 <div style="flex-grow: 1;">
-                    <div style="display:flex; align-items:center;">
-                        <b style="font-size:14px; color:#1e293b;">${r.nombre}</b>
+                    <div style="display:flex; align-items:center; margin-bottom: 4px;">
+                        <b style="font-size:15px; color:#1e293b; font-weight: 700;">${r.nombre}</b>
                         ${botonMapa}
                     </div>
-                    <small style="color:#64748b; display:block; margin-top:2px;">
-                        ${r.fecha} • ${r.hora} hs • <span style="color:var(--accent)">${r.sucursal}</span>
-                    </small>
+                    <div style="color:#64748b; font-size:12px; line-height: 1.5;">
+                        <span style="display:block;">📅 ${r.fecha}</span>
+                        <span>🕒 ${r.hora} hs • </span>
+                        <span style="color:var(--accent); font-weight: 600;">📍 ${r.sucursal || 'Merlo'}</span>
+                    </div>
                 </div>
-                <div style="background:${r.tipo === 'ENTRADA' ? '#10b981' : '#f43f5e'}; color:white; padding: 6px 12px; border-radius: 8px; font-size: 10px; font-weight: bold; min-width: 65px; text-align: center; text-transform: uppercase;">
+
+                <div style="background:${r.tipo === 'ENTRADA' ? '#10b981' : '#f43f5e'}; 
+                            color:white; 
+                            padding: 8px 0; 
+                            border-radius: 10px; 
+                            font-size: 11px; 
+                            font-weight: 800; 
+                            width: 85px; 
+                            text-align: center; 
+                            text-transform: uppercase;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                     ${r.tipo}
                 </div>
             </div>`;
@@ -1269,6 +1286,57 @@ function actualizarInterfazUsuario() {
     if(legajoSucursal) legajoSucursal.innerText = sucursal;
 }
 
+
+function verMiCredencial() {
+    if (!USER_INFO || !USER_INFO.dni) {
+        alert("Error: No hay sesión activa.");
+        return;
+    }
+
+    // Usamos el DNI de la sesión activa
+    const dni = USER_INFO.dni;
+    const nombre = USER_INFO.nombre;
+    const sucursal = USER_INFO.sucursal || "Merlo";
+    const fotoURL = `./img/perfiles/${dni}_foto.jpg`;
+
+    // Creamos un "Modal" de credencial
+    const modalCred = document.createElement('div');
+    modalCred.id = "modal-credencial";
+    modalCred.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px;";
+    
+    modalCred.innerHTML = `
+        <div style="background: white; width:100%; max-width:350px; border-radius:20px; overflow:hidden; box-shadow:0 20px 40px rgba(0,0,0,0.5); font-family: sans-serif; position:relative;">
+            <div style="background:#1e293b; color:white; padding:20px; text-align:center;">
+                <h3 style="margin:0; letter-spacing:2px;">RAPITAC</h3>
+                <small style="opacity:0.8;">CREDENCIAL DIGITAL DE IDENTIDAD</small>
+            </div>
+            
+            <div style="padding:20px; text-align:center; color:#333;">
+                <img src="${fotoURL}" onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${dni}'" 
+                     style="width:130px; height:130px; border-radius:15px; border:4px solid #10b981; object-fit:cover; margin-bottom:15px;">
+                
+                <h2 style="margin:0; color:#1e293b; text-transform:uppercase;">${nombre}</h2>
+                <p style="margin:5px 0; color:#10b981; font-weight:bold;">${sucursal}</p>
+                
+                <div style="margin-top:15px; border-top:1px dashed #ccc; padding-top:15px;">
+                    <small style="display:block; color:#666;">DNI / LEGAJO</small>
+                    <b style="font-size:18px; color:#1e293b;">${dni}</b>
+                </div>
+
+                <div style="margin-top:20px; opacity:0.7;">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=RAPITAC-${dni}" style="width:80px;">
+                </div>
+            </div>
+
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    style="width:100%; padding:15px; background:#f43f5e; color:white; border:none; font-weight:bold; cursor:pointer;">
+                CERRAR CREDENCIAL
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(modalCred);
+}
 window.onload = function() {
     const status = document.getElementById('status-text');
     const splash = document.getElementById('splash-screen');

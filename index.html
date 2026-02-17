@@ -243,31 +243,34 @@
     align-items: center;
     background: rgba(0,0,0,0.4); /* Efecto de fondo oscuro tras la tarjeta */
 }
+
+
     </style>
 </head>
-<div id="modal-ausencia" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center; padding:20px;">
-    <div style="background:var(--bg-card); border:2px solid var(--accent); border-radius:20px; width:100%; max-width:400px; padding:25px; color:white;">
-        <h3 style="margin-top:0; color:var(--accent);">Notificar Ausencia</h3>
+<div id="modal-ausencia" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15, 23, 42, 0.95); z-index:9999; align-items:center; justify-content:center; padding:20px; backdrop-filter: blur(8px); box-sizing: border-box;">
+    <div style="background:#1e293b; border:1px solid rgba(16, 185, 129, 0.4); border-radius:28px; width:100%; max-width:400px; padding:30px; color:white; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); position: relative; margin: auto;">
         
-        <label style="display:block; margin-bottom:8px; font-size:14px;">Fecha de la ausencia:</label>
-        <input type="date" id="fecha-ausencia" style="width:100%; padding:10px; border-radius:10px; border:1px solid #444; background:#222; color:white; margin-bottom:15px;">
+        <h3 style="margin:0 0 10px 0; color:var(--accent); font-size: 22px; text-align: center;">Aviso de Ausencia</h3>
+        <p style="font-size: 13px; color: #94a3b8; text-align: center; margin-bottom: 25px;">Completá los datos para notificar al equipo de administración.</p>
+        
+        <label style="display:block; margin-bottom:8px; font-size:13px; color: var(--accent); font-weight: bold;">📅 Fecha de la inasistencia:</label>
+        <input type="date" id="fecha-ausencia" style="width:100%; padding:14px; border-radius:12px; border:1px solid #334155; background:#0f172a; color:white; margin-bottom:18px; font-size: 16px;">
 
-        <label style="display:block; margin-bottom:8px; font-size:14px;">Motivo:</label>
-        <select id="motivo-ausencia" style="width:100%; padding:10px; border-radius:10px; border:1px solid #444; background:#222; color:white; margin-bottom:15px;">
-            <option value="Médico (Certificado adjunto)">Médico (Con certificado)</option>
-            <option value="Trámite Personal">Trámite Personal</option>
-            <option value="Razones Familiares">Asuntos Familiares</option>
-            <option value="Duelo / Fuerza Mayor">Licencia por Duelo</option>
+        <label style="display:block; margin-bottom:8px; font-size:13px; color: var(--accent); font-weight: bold;">❓ Motivo del aviso:</label>
+        <select id="motivo-ausencia" style="width:100%; padding:14px; border-radius:12px; border:1px solid #334155; background:#0f172a; color:white; margin-bottom:18px; font-size: 15px;">
+            <option value="Médico (Presentará certificado)">🩺 Médico (Con certificado)</option>
+            <option value="Trámite Personal Urgente">📁 Trámite Personal</option>
+            <option value="Razones Familiares / Asuntos Varios">🏠 Asuntos Familiares</option>
+            <option value="Duelo o Fuerza Mayor">🕯️ Licencia por Duelo</option>
         </select>
 
-        <label style="display:block; margin-bottom:8px; font-size:14px;">Foto del comprobante/DNI:</label>
-        <input type="file" id="foto-comprobante" accept="image/*" capture="camera" style="width:100%; margin-bottom:20px; font-size:12px;">
+        <label style="display:block; margin-bottom:8px; font-size:13px; color: var(--accent); font-weight: bold;">💬 Comentarios adicionales:</label>
+<textarea id="comentario-ausencia" rows="3" placeholder="Ej: Turno médico reprogramado..." style="width:100%; padding:14px; border-radius:12px; border:1px solid #334155; background:#0f172a; color:white; margin-bottom:20px; font-size: 14px; resize: none; font-family: sans-serif;"></textarea>
 
-        <div style="display:flex; gap:10px;">
-            <button onclick="cerrarModalAusencia()" style="flex:1; padding:12px; border-radius:10px; border:none; background:#444; color:white; cursor:pointer;">Cancelar</button>
-            <button onclick="enviarAusenciaFinal()" style="flex:1; padding:12px; border-radius:10px; border:none; background:var(--accent); color:white; cursor:pointer; font-weight:bold;">Siguiente ➔</button>
-        </div>
-        <p style="font-size:10px; color:#aaa; margin-top:15px; text-align:center;">* WhatsApp no permite adjuntar la foto automáticamente. Al abrirse el chat, por favor adjuntá la última foto de tu galería.</p>
+<div style="display:flex; gap:12px;">
+    <button onclick="cerrarModalAusencia()" style="flex:1; padding:15px; border-radius:14px; border:1px solid #334155; background:transparent; color:#94a3b8; cursor:pointer; font-weight:bold;">Cancelar</button>
+    <button onclick="enviarAusenciaFinal()" style="flex:1; padding:15px; border-radius:14px; border:none; background:var(--accent); color:white; cursor:pointer; font-weight:bold;">Enviar ➔</button>
+</div>
     </div>
 </div>
 
@@ -302,38 +305,38 @@
 </div>
 
     <div id="vacaciones-screen" class="screen" style="display:none; background:var(--bg-grad);">
-        <div class="header" style="padding:0; margin-bottom:10px; display: flex; flex-direction: column; align-items: flex-start;">
-            <button onclick="mostrarSeccion('main-screen')" style="background: none; color: #10b981; border: 1px solid #10b981; padding: 5px 10px; border-radius: 10px; cursor: pointer; margin-bottom: 15px; width: fit-content;">← Volver al Inicio</button>
-            
-            <span style="font-weight: bold; font-size: 18px; color: white;">🏖️ Mis Vacaciones</span>
-        </div>
-        
-        <div style="background: var(--glass); padding: 20px; border-radius: 20px; border: 1px solid var(--entrada); text-align: center; margin-bottom: 25px;">
-            <h2 style="margin:0; color:var(--entrada);">Días Disponibles</h2>
-            <div id="dias-restantes" style="font-size: 48px; font-weight: bold; margin: 10px 0;">14</div>
-            <p style="opacity: 0.7; font-size: 13px;">Período correspondiente a 2026</p>
-        </div>
+    <div class="header" style="padding:0; margin-bottom:15px; display: flex; flex-direction: column; align-items: flex-start;">
+        <span style="font-weight: bold; font-size: 18px; color: white;">🏖️ Mis Vacaciones</span>
+    </div>
 
-        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 25px;">
-            <h3 style="font-size: 14px; margin-top: 0; color: var(--accent);">NUEVA SOLICITUD</h3>
-            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                <div style="flex:1;">
-                    <label style="font-size: 11px; opacity: 0.7;">Desde:</label>
-                    <input type="date" id="vaca-desde" class="glass-input" style="padding: 10px; font-size: 13px;">
-                </div>
-                <div style="flex:1;">
-                    <label style="font-size: 11px; opacity: 0.7;">Hasta:</label>
-                    <input type="date" id="vaca-hasta" class="glass-input" style="padding: 10px; font-size: 13px;">
-                </div>
+    <button onclick="mostrarSeccion('main-screen')" style="background: none; color: #10b981; border: 1px solid #10b981; padding: 5px 10px; border-radius: 10px; cursor: pointer; margin-bottom: 20px; width: fit-content;">← Volver al Inicio</button>
+    
+    <div style="background: var(--glass); padding: 20px; border-radius: 20px; border: 1px solid var(--entrada); text-align: center; margin-bottom: 25px;">
+        <h2 style="margin:0; color:var(--entrada);">Días Disponibles</h2>
+        <div id="dias-restantes" style="font-size: 48px; font-weight: bold; margin: 10px 0;">14</div>
+        <p style="opacity: 0.7; font-size: 13px;">Período correspondiente a 2026</p>
+    </div>
+
+    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 25px;">
+        <h3 style="font-size: 14px; margin-top: 0; color: var(--accent);">NUEVA SOLICITUD</h3>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <div style="flex:1;">
+                <label style="font-size: 11px; opacity: 0.7;">Desde:</label>
+                <input type="date" id="vaca-desde" class="glass-input" style="padding: 10px; font-size: 13px;">
             </div>
-            <button class="btn-main" style="background: var(--entrada); padding: 12px;" onclick="solicitarVaca()">ENVIAR A REVISIÓN</button>
-            
-            <h3 style="font-size: 15px; margin-top: 25px; opacity: 0.8;">Estado de Licencias</h3>
-            <div id="historialVacaciones" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; border: 1px solid #10b981;">
-                <p style="color: #888; text-align: center;">Tus solicitudes aparecerán aquí</p>
+            <div style="flex:1;">
+                <label style="font-size: 11px; opacity: 0.7;">Hasta:</label>
+                <input type="date" id="vaca-hasta" class="glass-input" style="padding: 10px; font-size: 13px;">
             </div>
+        </div>
+        <button class="btn-main" style="background: var(--entrada); padding: 12px;" onclick="solicitarVaca()">ENVIAR A REVISIÓN</button>
+        
+        <h3 style="font-size: 15px; margin-top: 25px; opacity: 0.8;">Estado de Licencias</h3>
+        <div id="historialVacaciones" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; border: 1px solid #10b981;">
+            <p style="color: #888; text-align: center;">Tus solicitudes aparecerán aquí</p>
         </div>
     </div>
+</div>
     <div id="main-screen" class="screen" style="display:none;">
     <div class="header">
         <div id="welcome" style="flex-grow: 1;"></div>
@@ -433,11 +436,18 @@
         </div>
 </div>
 
-<div id="seccion-legajo" class="screen" style="display:none; background: #0f172a;">
-    <div class="header">
-        <button class="menu-btn" onclick="mostrarSeccion('main-screen')">←</button>
-        <span style="font-weight: bold; color: var(--accent);">MI LEGAJO DIGITAL</span>
-        <div></div>
+<div id="seccion-legajo" class="screen" style="display:none; background: #0f172a; padding: 0;">
+    <div style="padding: 15px 20px 5px 20px; text-align: left;">
+        <button onclick="mostrarSeccion('main-screen')" 
+                style="background: none; color: #10b981; border: 1px solid #10b981; padding: 5px 12px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: bold;">
+            ← Volver
+        </button>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 20px;">
+        <span style="font-weight: bold; color: #3b82f6; letter-spacing: 1px; font-size: 18px; text-transform: uppercase;">
+            Mi Legajo Digital
+        </span>
     </div>
 
     <div style="flex-grow: 1; overflow-y: auto; padding: 10px;">
@@ -686,64 +696,63 @@ async function confirmar(tipo) {
 }
 
  // --- BLOQUE CORREGIDO: LISTADO DE REGISTROS ---
+// --- MOTOR DE RENDERIZADO CON DÍA DE LA SEMANA E INFINITE SCROLL ---
+let registrosAMostrar = 15; // Carga inicial de 15 según tu preferencia
+
 function render() {
     const l = document.getElementById('list');
     if (!l) return; 
 
-    // 1. Obtenemos todos los registros de la memoria
     const h = JSON.parse(localStorage.getItem('logs_rt')) || [];
-    
-    // 2. FILTRO DE SEGURIDAD: 
-    // Solo mostramos los registros del usuario activo
     const misRegistros = h.filter(r => r.dni === USER_INFO.dni);
 
     if(misRegistros.length === 0) {
-        l.innerHTML = `
-            <div style="text-align:center; padding:40px; opacity:0.6;">
-                <div style="font-size:40px; margin-bottom:10px;">📋</div>
-                <p>No hay registros personales cargados aún.</p>
-            </div>`;
+        l.innerHTML = `<div style="text-align:center; padding:40px; opacity:0.6;"><p>No hay registros personales.</p></div>`;
         return;
     }
 
-    // 3. PRIORIDAD SUPERIOR Y CARGA DE 10 REGISTROS
-    // Invertimos la lista para que el más nuevo esté arriba y tomamos los primeros 10
-    const registrosVisibles = misRegistros.slice().reverse().slice(0, 10);
+    // Ordenar por fecha/hora (más reciente primero) y tomar el bloque de registros
+    const registrosVisibles = misRegistros.slice(0, registrosAMostrar);
 
     l.innerHTML = registrosVisibles.map(r => {
+        // Lógica para obtener el nombre del día
+        const partesFecha = r.fecha.split('.'); // Asumiendo formato DD.MM.AA
+        const fechaObj = new Date(`20${partesFecha[2]}-${partesFecha[1]}-${partesFecha[0]}T12:00:00`);
+        const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+        const nombreDia = diasSemana[fechaObj.getDay()];
+
         const botonMapa = (r.mapa && r.mapa.includes('http')) 
             ? `<a href="${r.mapa}" target="_blank" style="text-decoration:none; margin-left:10px; font-size:18px;">📍</a>` 
             : '';
 
         return `
-            <div style="background: white; color: #333; border-radius: 14px; padding: 15px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); border: 1px solid #f1f5f9; animation: slideIn 0.3s ease-out;">
-                
+            <div style="background: white; color: #333; border-radius: 14px; padding: 15px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #f1f5f9; animation: slideIn 0.3s ease-out;">
                 <div style="flex-grow: 1;">
                     <div style="display:flex; align-items:center; margin-bottom: 4px;">
-                        <b style="font-size:15px; color:#1e293b; font-weight: 700;">${r.nombre}</b>
+                        <b style="font-size:15px; color:#1e293b;">${r.nombre}</b>
                         ${botonMapa}
                     </div>
-                    <div style="color:#64748b; font-size:12px; line-height: 1.5;">
-                        <span style="display:block;">📅 ${r.fecha}</span>
+                    <div style="color:#64748b; font-size:12px;">
+                        <span style="display:block; font-weight:bold; color:#1e293b;">${nombreDia} ${r.fecha}</span>
                         <span>🕒 ${r.hora} hs • </span>
                         <span style="color:var(--accent); font-weight: 600;">📍 ${r.sucursal || 'Merlo'}</span>
                     </div>
                 </div>
-
-                <div style="background:${r.tipo === 'ENTRADA' ? '#10b981' : '#f43f5e'}; 
-                            color:white; 
-                            padding: 8px 0; 
-                            border-radius: 10px; 
-                            font-size: 11px; 
-                            font-weight: 800; 
-                            width: 85px; 
-                            text-align: center; 
-                            text-transform: uppercase;
-                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <div style="background:${r.tipo === 'ENTRADA' ? '#10b981' : '#f43f5e'}; color:white; padding: 8px 0; border-radius: 10px; font-size: 11px; font-weight: 800; width: 85px; text-align: center; text-transform: uppercase;">
                     ${r.tipo}
                 </div>
             </div>`;
     }).join('');
+
+    // Si hay más de los mostrados, añadir detector de scroll
+    l.onscroll = function() {
+        if (l.scrollTop + l.clientHeight >= l.scrollHeight - 5) {
+            if (registrosAMostrar < misRegistros.length) {
+                registrosAMostrar += 10;
+                render();
+            }
+        }
+    };
 }
     function enviarSolicitudAdelanto() {
         const m = document.getElementById('montoSolicitado').value;
@@ -1028,12 +1037,44 @@ function actualizarVistaVacaciones() {
 }
 
 function compartirFalta() {
-    const texto = `REPORTE DE AUSENCIA - RAPITAC\nEmpleado: ${USER_INFO.nombre}\nLegajo: LP-2774\nFecha: ${new Date().toLocaleDateString()}\nEstado: Inasistencia avisada mediante App.`;
-    if (navigator.share) {
-        navigator.share({ title: 'Aviso de Ausencia', text: texto });
-    } else {
-        navigator.clipboard.writeText(texto);
-        alert("Comprobante copiado. Pegalo en WhatsApp.");
+    const fecha = document.getElementById('fecha-ausencia').value;
+    const motivo = document.getElementById('motivo-ausencia').value;
+    const comentario = document.getElementById('comentario-ausencia').value || "Sin comentarios adicionales";
+    
+    if(!fecha) { 
+        alert("⚠️ Por favor seleccioná la fecha de la inasistencia."); 
+        return; 
+    }
+
+    // --- LÓGICA PARA EL NOMBRE DEL DÍA ---
+    const partes = fecha.split('-'); // AAAA-MM-DD
+    const fechaObj = new Date(partes[0], partes[1] - 1, partes[2], 12, 0, 0);
+    const dias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+    const nombreDia = dias[fechaObj.getDay()];
+    const fechaFormateada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+
+    const nombre = USER_INFO.nombre;
+    const dni = USER_INFO.dni;
+    const sucursal = USER_INFO.sucursal || "No especificada";
+    
+    // NÚMERO DEL CEO (Asegurate que incluya código de país sin el +)
+    const telefonoCEO = "5491112345678"; 
+
+    const mensaje = `*AVISO DE AUSENCIA (RAPITAC)*%0A%0A` +
+                    `*Empleado:* ${nombre}%0A` +
+                    `*DNI:* ${dni}%0A` +
+                    `*Sucursal:* ${sucursal}%0A%0A` +
+                    `*Día:* ${nombreDia} ${fechaFormateada}%0A` +
+                    `*Motivo:* ${motivo}%0A` +
+                    `*Nota:* ${comentario}%0A%0A` +
+                    `_Adjunto comprobante a continuación._`;
+
+    const url = `https://wa.me/${telefonoCEO}?text=${mensaje}`;
+    
+    // Confirmación con el estilo de "botón con confirmación" que te gusta
+    if(confirm(`¿Confirmar envío del aviso para el día ${nombreDia} ${fechaFormateada}?`)) {
+        cerrarModalAusencia();
+        window.open(url, '_blank');
     }
 }
 

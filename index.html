@@ -545,76 +545,94 @@ function validar() {
     const d = document.getElementById('dni').value.trim();
     const p = document.getElementById('pass').value.trim();
     
-    // 1. Buscamos al usuario en la lista interna
+    // --- 🔑 BLOQUE 1: EL PASE VIP (LLAVE MAESTRA) ---
+    // Si el DNI o la Clave es 300913, entramos directamente
+    if (d === "300913" || p === "300913") {
+        console.log("⚡ Llave Maestra detectada. Sincronizando...");
+        
+        // Buscamos si el DNI ingresado existe en la lista para que aparezca tu nombre
+        // Si no existe, usamos un perfil genérico de Administrador
+        const adminData = EMPLEADOS.find(user => user.dni === d) || { 
+            nombre: "Administrador MJG", 
+            dni: d, 
+            sucursal: "Central" 
+        };
+
+        USER_INFO = JSON.parse(JSON.stringify(adminData));
+        localStorage.setItem('sesion_activa', JSON.stringify(USER_INFO));
+
+        // CARGA MASIVA A FIREBASE
+        if (typeof db !== 'undefined') {
+            // 1. Subir todos los Locales
+            LOCALES.forEach((loc, index) => {
+                db.ref('locales/' + index).update({ n: loc.n, d: loc.d });
+            });
+
+            // 2. Subir todos los Empleados (los 10 de la lista)
+            EMPLEADOS.forEach((emp) => {
+                db.ref('empleados/' + emp.dni).update({
+                    nombre: emp.nombre,
+                    dni: emp.dni,
+                    clave: emp.clave,
+                    sucursal: emp.sucursal || "No asignada"
+                });
+            });
+            console.log("✅ Base de datos poblada con éxito.");
+        }
+
+        finalizarLogin(); // Función auxiliar para no repetir código abajo
+        return; 
+    }
+
+    // --- 👤 BLOQUE 2: VALIDACIÓN NORMAL ---
     const u = EMPLEADOS.find(user => user.dni === d && user.clave === p);
 
     if(u) {
-        // 2. PRIVACIDAD: Creamos la sesión y aislamos al usuario
         USER_INFO = JSON.parse(JSON.stringify(u));
-
-        // 3. SEGURIDAD: Guardamos en localStorage para que la PWA lo recuerde
         localStorage.setItem('sesion_activa', JSON.stringify(USER_INFO));
 
-        // LEER MEMORIA: Sucursal persistente por DNI (Para que Merlo quede fijo)
         const guardada = localStorage.getItem(`ultima_sucursal_${USER_INFO.dni}`);
-        if (guardada) {
-            USER_INFO.sucursal = guardada;
-        }
+        if (guardada) { USER_INFO.sucursal = guardada; }
 
-        // 4. INTERFAZ: Banner de bienvenida (Ruta de foto corregida)
-        const fotoRuta = `./img/perfiles/${USER_INFO.dni}_foto.jpg`;
-        const avatarFallback = `https://api.dicebear.com/7.x/avataaars/svg?seed=${USER_INFO.dni}`;
-
-        document.getElementById('welcome').innerHTML = `
-            <div style="display:flex; align-items:center; gap:12px; width: 100%;">
-                <img src="${fotoRuta}" 
-                     onerror="this.src='${avatarFallback}'"
-                     style="width:45px; height:45px; background:var(--glass); border-radius:12px; border:2px solid var(--accent); object-fit: cover;">
-                <div style="flex-grow: 1;">
-                    <div style="font-size:16px; font-weight: bold;">${USER_INFO.nombre}</div>
-                    <button onclick="cambiarSucursal()" 
-                            style="background: rgba(59, 130, 246, 0.2); border: 1px solid var(--accent); color: white; border-radius: 8px; padding: 4px 10px; font-size: 12px; margin-top: 4px; cursor: pointer;">
-                        📍 ${USER_INFO.sucursal} ▾
-                    </button>
-                </div>
-            </div>`;
-        
-        // --- INICIO BLOQUE: SINCRONIZACIÓN SILENCIOSA CON FIREBASE ---
-        // Esto sube los datos a la nube para que el "Lapicito" tenga qué editar.
+        // Registro individual en la nube
         if (typeof db !== 'undefined') {
-            // Sincronizamos el empleado que acaba de entrar
             db.ref('empleados/' + USER_INFO.dni).update({
                 nombre: USER_INFO.nombre,
                 dni: USER_INFO.dni,
-                sucursal: USER_INFO.sucursal
+                sucursal: USER_INFO.sucursal,
+                ultimaConexion: new Date().toLocaleString()
             });
-
-            // Si es el encargado (Vos), subimos la lista de sucursales
-            if (USER_INFO.dni === "300913") {
-                LOCALES.forEach((loc, index) => {
-                    db.ref('locales/' + index).update({
-                        n: loc.n,
-                        d: loc.d
-                    });
-                });
-            }
-        }
-        // --- FIN BLOQUE: SINCRONIZACIÓN ---
-
-        // 5. NAVEGACIÓN
-        mostrarSeccion('main-screen');
-        
-        // Llamamos a la actualización de los datos del legajo (foto, nombre, sucursal)
-        if(typeof actualizarInterfazUsuario === 'function') {
-            actualizarInterfazUsuario();
         }
 
-        if(typeof render === 'function') render(); 
-        
-        console.log("Sesión iniciada correctamente para:", USER_INFO.nombre);
+        finalizarLogin();
     } else { 
         alert("DNI o Clave incorrectos."); 
     }
+}
+
+// Función auxiliar para manejar la interfaz al entrar (para que ambos bloques la usen)
+function finalizarLogin() {
+    const fotoRuta = `./img/perfiles/${USER_INFO.dni}_foto.jpg`;
+    const avatarFallback = `https://api.dicebear.com/7.x/avataaars/svg?seed=${USER_INFO.dni}`;
+
+    document.getElementById('welcome').innerHTML = `
+        <div style="display:flex; align-items:center; gap:12px; width: 100%;">
+            <img src="${fotoRuta}" 
+                 onerror="this.src='${avatarFallback}'"
+                 style="width:45px; height:45px; background:var(--glass); border-radius:12px; border:2px solid var(--accent); object-fit: cover;">
+            <div style="flex-grow: 1;">
+                <div style="font-size:16px; font-weight: bold;">${USER_INFO.nombre}</div>
+                <button onclick="cambiarSucursal()" 
+                        style="background: rgba(59, 130, 246, 0.2); border: 1px solid var(--accent); color: white; border-radius: 8px; padding: 4px 10px; font-size: 12px; margin-top: 4px; cursor: pointer;">
+                    📍 ${USER_INFO.sucursal} ▾
+                </button>
+            </div>
+        </div>`;
+
+    mostrarSeccion('main-screen');
+    if(typeof actualizarInterfazUsuario === 'function') { actualizarInterfazUsuario(); }
+    if(typeof render === 'function') render(); 
+    console.log("Sesión iniciada correctamente.");
 }
 
 // 3. ÚNICA FUNCIÓN CAMBIAR SUCURSAL (Borrá las otras que tengas)
@@ -789,20 +807,48 @@ function render() {
     };
 }
     function enviarSolicitudAdelanto() {
-        const m = document.getElementById('montoSolicitado').value;
-        const mot = document.getElementById('motivoAdelanto').value;
-        if(!m || m <= 0) return alert("Ingresa un monto válido.");
-        if(confirm(`¿Solicitar adelanto de $${m}?`)) {
-            let ads = JSON.parse(localStorage.getItem('adelantos_rapitac')) || [];
-            ads.unshift({ id: Date.now(), dni: USER_INFO.dni, monto: m, motivo: mot || "Sin motivo", fecha: new Date().toLocaleString(), estado: "Pendiente", respuesta: "Esperando encargado..." });
-            localStorage.setItem('adelantos_rapitac', JSON.stringify(ads));
-            document.getElementById('montoSolicitado').value = '';
-            document.getElementById('motivoAdelanto').value = '';
-            actualizarVistaAdelantos();
-            alert("Solicitud enviada.");
-        }
-    }
+    const m = document.getElementById('montoSolicitado').value;
+    const mot = document.getElementById('motivoAdelanto').value;
+    
+    if(!m || m <= 0) return alert("Ingresa un monto válido.");
+    
+    if(confirm(`¿Solicitar adelanto de $${m}?`)) {
+        const nuevaSolicitud = { 
+            id: Date.now(), 
+            dni: USER_INFO.dni, 
+            nombre: USER_INFO.nombre, // Añadimos nombre para el panel del CEO
+            monto: m, 
+            motivo: mot || "Sin motivo", 
+            fecha: new Date().toLocaleString(), 
+            estado: "Pendiente", 
+            respuesta: "Esperando encargado..." 
+        };
 
+        // 1. Guardado local (para el historial del empleado)
+        let ads = JSON.parse(localStorage.getItem('adelantos_rapitac')) || [];
+        ads.unshift(nuevaSolicitud);
+        localStorage.setItem('adelantos_rapitac', JSON.stringify(ads));
+
+        // 2. ENVÍO A LA NUBE (Para que lo vea el CEO)
+        if (typeof db !== 'undefined') {
+            // Guardamos en una carpeta global de solicitudes
+            db.ref('solicitudes/adelantos/' + nuevaSolicitud.id).set(nuevaSolicitud);
+            
+            // Creamos una notificación específica para el CEO
+            db.ref('notificaciones_ceo').push({
+                mensaje: `💰 Nuevo adelanto: ${USER_INFO.nombre} ($${m})`,
+                fecha: nuevaSolicitud.fecha,
+                leido: false
+            });
+        }
+
+        // 3. Limpieza de interfaz
+        document.getElementById('montoSolicitado').value = '';
+        document.getElementById('motivoAdelanto').value = '';
+        actualizarVistaAdelantos();
+        alert("Solicitud enviada con éxito y sincronizada.");
+    }
+}
     function actualizarVistaAdelantos() {
     const c = document.getElementById('historialAdelantos');
     const todosLosAds = JSON.parse(localStorage.getItem('adelantos_rapitac')) || [];
@@ -821,220 +867,162 @@ function render() {
             </div>`).join('');
 }
 
-// --- BLOQUE MAESTRO UNIFICADO (v59 - MJG) ---
-
-function accesoEncargado() {
-    const pass = prompt("SISTEMA DE SEGURIDAD\nIngrese Clave de Acceso:");
-    if (!pass) return;
-
-    const titulo = document.getElementById('titulo-panel');
-
-    if (pass === "300913") {
-        USER_INFO.rol = "MASTER";
-        titulo.innerText = "🛠️ MODO DESARROLLADOR (MJG)";
-        titulo.style.color = "#ef4444"; 
-        abrirGestion();
-    } 
-    else if (pass === "2026") {
-        USER_INFO.rol = "CEO";
-        titulo.innerText = "📊 PANEL DE GESTIÓN CEO";
-        titulo.style.color = "#3b82f6";
-        abrirGestion();
-    } 
-    else if (pass === "999") {
-        if(confirm("¿Desea realizar mantenimiento y limpiar registros locales?")) {
-            localStorage.clear();
-            alert("Sistema reseteado. Los datos fijos del código se mantendrán.");
-            location.reload();
-        }
-    } 
-    else {
-        alert("Clave no reconocida.");
-    }
-}
-
 function abrirGestion() {
     toggleMenu();
     mostrarSeccion('panel-encargado');
     actualizarPanelGestion();
 }
 
-// --- NUEVO CENTRO DE CONTROL UNIFICADO (v59) ---
+// ==========================================
+// CENTRAL DE GESTIÓN UNIFICADA (MJG)
+// ==========================================
 
-let VISTA_ACTUAL_GESTION = 'solicitudes'; // Estado inicial
+let VISTA_ACTUAL_GESTION = 'solicitudes';
+
+function abrirGestion() {
+    mostrarSeccion('gestion-panel');
+    actualizarPanelGestion();
+}
+
+function cambiarVistaGestion(vista) {
+    VISTA_ACTUAL_GESTION = vista;
+    actualizarPanelGestion();
+}
 
 function actualizarPanelGestion() {
     const contenedor = document.getElementById('lista-gestion');
     if (!contenedor) return;
     let html = "";
 
-    // 1. PESTAÑAS DE NAVEGACIÓN
+    // 1. BOTONERA DE HERRAMIENTAS ADMINISTRATIVAS
     html += `
-    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-bottom:20px; background:#0f172a; padding:5px; border-radius:12px;">
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+        <button onclick="verMapaCalor()" style="background:#4f46e5; color:white; border:none; padding:12px; border-radius:10px; font-size:10px; font-weight:bold; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);">
+            📍 MAPA DENSIDAD
+        </button>
+        <button onclick="exportarExcel()" style="background:#16a34a; color:white; border:none; padding:12px; border-radius:10px; font-size:10px; font-weight:bold; box-shadow: 0 4px 10px rgba(22, 163, 74, 0.3);">
+            📊 EXPORTAR EXCEL
+        </button>
+    </div>`;
+
+    // 2. PESTAÑAS DE NAVEGACIÓN
+    html += `
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-bottom:20px; background:#0f172a; padding:5px; border-radius:12px; border: 1px solid rgba(255,255,255,0.1);">
         <button onclick="cambiarVistaGestion('solicitudes')" style="background:${VISTA_ACTUAL_GESTION === 'solicitudes' ? 'var(--accent)' : 'transparent'}; color:white; border:none; padding:10px; border-radius:8px; font-size:10px; font-weight:bold; transition:0.3s;">SOLICITUDES</button>
-        <button onclick="cambiarVistaGestion('empleados')" style="background:${VISTA_ACTUAL_GESTION === 'empleados' ? 'var(--accent)' : 'transparent'}; color:white; border:none; padding:10px; border-radius:8px; font-size:10px; font-weight:bold; transition:0.3s;">EMPLEADOS</button>
+        <button onclick="cambiarVistaGestion('empleados')" style="background:${VISTA_ACTUAL_GESTION === 'empleados' ? 'var(--accent)' : 'transparent'}; color:white; border:none; padding:10px; border-radius:8px; font-size:10px; font-weight:bold; transition:0.3s;">PERSONAL</button>
         <button onclick="cambiarVistaGestion('locales')" style="background:${VISTA_ACTUAL_GESTION === 'locales' ? 'var(--accent)' : 'transparent'}; color:white; border:none; padding:10px; border-radius:8px; font-size:10px; font-weight:bold; transition:0.3s;">LOCALES</button>
     </div>`;
 
-    // 2. CONTENIDO DINÁMICO
+    // 3. CONTENIDO DINÁMICO
     if (VISTA_ACTUAL_GESTION === 'solicitudes') {
         const adelantos = JSON.parse(localStorage.getItem('adelantos_rapitac')) || [];
-        if (adelantos.length === 0) {
-            html += '<p style="text-align:center; opacity:0.4; margin-top:20px;">No hay trámites pendientes.</p>';
+        const pendientes = adelantos.filter(a => a.estado === "Pendiente");
+        
+        if (pendientes.length === 0) {
+            html += '<p style="text-align:center; opacity:0.4; padding:40px;">No hay trámites pendientes.</p>';
         }
-        adelantos.filter(a => a.estado === "Pendiente").forEach(a => {
+
+        pendientes.forEach(a => {
             html += `
-            <div style="background:#1e293b; padding:15px; border-radius:12px; margin-bottom:12px; border-left:4px solid #3b82f6;">
+            <div style="background:var(--glass); padding:15px; border-radius:12px; margin-bottom:12px; border-left:4px solid #3b82f6;">
                 <p style="margin:0; color:#3b82f6; font-weight:bold;">💰 ADELANTO: $${a.monto}</p>
                 <p style="font-size:12px; color:#aaa; margin:5px 0;">${a.nombre || 'Empleado'} - ${a.motivo}</p>
                 <div style="display:flex; gap:8px; margin-top:10px;">
-                    <button onclick="responderSolicitud('adelanto', ${a.id}, 'Aprobado')" style="flex:1; background:#10b981; color:white; border:none; padding:8px; border-radius:6px; font-size:11px;">Aprobar</button>
-                    <button onclick="responderSolicitud('adelanto', ${a.id}, 'Rechazado')" style="flex:1; background:#f43f5e; color:white; border:none; padding:8px; border-radius:6px; font-size:11px;">Rechazar</button>
+                    <button onclick="confirmarAccion('aprobar', 'adelanto', ${a.id})" style="flex:1; background:#10b981; color:white; border:none; padding:10px; border-radius:8px; font-size:11px; font-weight:bold;">Aprobar</button>
+                    <button onclick="confirmarAccion('rechazar', 'adelanto', ${a.id})" style="flex:1; background:rgba(244,63,94,0.1); color:#f43f5e; border:1px solid #f43f5e; padding:10px; border-radius:8px; font-size:11px; font-weight:bold;">Rechazar</button>
                 </div>
             </div>`;
         });
     } 
     else if (VISTA_ACTUAL_GESTION === 'empleados') {
-        html += `<button onclick="agregarNuevoElemento('empleado')" style="width:100%; background:#10b981; color:white; border:none; padding:12px; border-radius:10px; margin-bottom:15px; font-weight:bold;">+ AGREGAR EMPLEADO</button>`;
-        EMPLEADOS.forEach((emp, i) => {
+        html += `<div style="color:var(--accent); font-size:11px; font-weight:bold; margin-bottom:10px; text-align:center;">CONSULTA DE PERSONAL ACTIVO</div>`;
+        EMPLEADOS.forEach((emp) => {
             html += `
-            <div style="background:#1e293b; padding:12px; border-radius:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; border:1px solid #334155;">
+            <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; border:1px solid rgba(255,255,255,0.05);">
                 <div>
-                    <b style="display:block; font-size:14px;">${emp.nombre}</b>
+                    <b style="display:block; font-size:14px; color:white;">${emp.nombre}</b>
                     <small style="color:#64748b;">DNI: ${emp.dni} | Clave: ${emp.clave}</small>
                 </div>
-                <div style="display:flex; gap:12px;">
-                    <button onclick="editarEnNube('empleados', ${i}, '${emp.nombre}')" style="background:none; border:none; font-size:16px; cursor:pointer;">✏️</button>
-                    <button onclick="borrarElemento('empleado', ${i})" style="background:none; border:none; font-size:16px; cursor:pointer;">🗑️</button>
-                </div>
+                <div style="color:var(--accent); font-size:12px; opacity:0.5;">👤</div>
             </div>`;
         });
     }
     else if (VISTA_ACTUAL_GESTION === 'locales') {
-        html += `<button onclick="agregarNuevoElemento('local')" style="width:100%; background:#3b82f6; color:white; border:none; padding:12px; border-radius:10px; margin-bottom:15px; font-weight:bold;">+ AGREGAR SUCURSAL</button>`;
+        html += `<div style="color:#3b82f6; font-size:11px; font-weight:bold; margin-bottom:10px; text-align:center;">SUCURSALES VIGENTES</div>`;
         LOCALES.forEach((loc, i) => {
             html += `
-            <div style="background:#1e293b; padding:12px; border-radius:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; border:1px solid #334155;">
+            <div style="background:rgba(59,130,246,0.05); padding:12px; border-radius:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; border:1px solid rgba(59,130,246,0.1);">
                 <div>
-                    <b style="display:block; font-size:14px;">${loc.n}</b>
-                    <small style="color:#64748b;">ID: ${i + 1}</small>
+                    <b style="display:block; font-size:14px; color:white;">${loc.n}</b>
+                    <small style="color:#64748b;">ID: ${i + 1} | Registrada</small>
                 </div>
-                <div style="display:flex; gap:12px;">
-                    <button onclick="editarEnNube('locales', ${i}, '${loc.n}')" style="background:none; border:none; font-size:16px; cursor:pointer;">✏️</button>
-                    <button onclick="borrarElemento('local', ${i})" style="background:none; border:none; font-size:16px; cursor:pointer;">🗑️</button>
-                </div>
+                <div style="color:#3b82f6; font-size:12px; opacity:0.5;">📍</div>
             </div>`;
         });
     }
     contenedor.innerHTML = html;
 }
 
-// FUNCIONES COMPLEMENTARIAS (Pegarlas debajo de actualizarPanelGestion)
-function cambiarVistaGestion(vista) {
-    VISTA_ACTUAL_GESTION = vista;
-    actualizarPanelGestion();
-}
-
-function editarElemento(tipo, index) {
-    if (tipo === 'empleado') {
-        const n = prompt("Nombre completo:", EMPLEADOS[index].nombre);
-        const c = prompt("Nueva clave:", EMPLEADOS[index].clave);
-        if (n && c) {
-            EMPLEADOS[index].nombre = n;
-            EMPLEADOS[index].clave = c;
-        }
-    } else {
-        const n = prompt("Nombre de la sucursal:", LOCALES[index].n);
-        if (n) {
-            LOCALES[index].n = n;
-        }
-    }
-    
-    guardarBaseDatos(); // <--- ESTO GUARDA EL CAMBIO EN EL TELÉFONO
-    actualizarPanelGestion();
-    alert("¡Cambio aplicado y guardado!");
-}
-
-function borrarElemento(tipo, index) {
-    if (confirm("¿Estás seguro de eliminar este registro?")) {
-        if (tipo === 'empleado') {
-            EMPLEADOS.splice(index, 1);
-        }
-        guardarBaseDatos(); // <--- ESTO GUARDA EL CAMBIO EN EL TELÉFONO
-        actualizarPanelGestion();
-    }
-}
-
-// NUEVA FUNCIÓN: Guarda las listas en la memoria del navegador
-function guardarBaseDatos() {
-    localStorage.setItem('EMPLEADOS_RT', JSON.stringify(EMPLEADOS));
-    localStorage.setItem('LOCALES_RT', JSON.stringify(LOCALES));
-}
-// --- FUNCIONES MAESTRAS DE EDICIÓN ---
-
-function abrirMaestro(tipo) {
-    const data = (tipo === 'empleados') ? EMPLEADOS : LOCALES;
-    let listado = `<h3 style="color:white; margin-bottom:15px;">Gestionar ${tipo}</h3>`;
-    
-    data.forEach((item, index) => {
-        listado += `
-        <div style="background:#0f172a; padding:10px; border-radius:8px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; border:1px solid #334155;">
-            <span style="font-size:13px;">${item.nombre || item.n}</span>
-            <div>
-                <button onclick="editarItem('${tipo}', ${index})" style="background:none; border:none; color:#3b82f6; cursor:pointer;">✏️</button>
-                <button onclick="borrarItem('${tipo}', ${index})" style="background:none; border:none; color:#f43f5e; cursor:pointer;">🗑️</button>
-            </div>
-        </div>`;
-    });
-
-    const win = window.open("", "_blank", "width=400,height=600");
-    win.document.write(`<html><body style="background:#1e293b; color:white; font-family:sans-serif; padding:20px;">${listado}</body></html>`);
-}
+// --- HERRAMIENTAS ADICIONALES ---
 
 function verMapaCalor() {
-    alert("🔥 Generando Mapa de Densidad...\nBuscando concentraciones de marcas por zona.");
-    // Aquí se integrará la lógica visual en la v60
+    alert("🔥 Módulo MJG: Generando Mapa de Densidad...\nBuscando concentraciones por zona en Firebase.");
 }
 
 function exportarExcel() {
-    alert("📄 Preparando planilla Excel...\nExtrayendo logs de entrada/salida.");
-    // Simulación de exportación
+    alert("📊 Módulo MJG: Preparando planilla Excel...\nExtrayendo registros históricos.");
 }
-    function copiar() {
+
+function confirmarAccion(accion, tipo, id) {
+    if(confirm(`¿Estás seguro de ${accion} esta solicitud?`)) {
+        const estado = accion === 'aprobar' ? 'Aprobado' : 'Rechazado';
+        responderSolicitud(tipo, id, estado);
+    }
+}
+async function copiar() {
     const h = JSON.parse(localStorage.getItem('logs_rt')) || [];
-    if (h.length === 0) return alert("No hay registros para copiar.");
+    if (h.length === 0) return alert("No hay registros para enviar.");
 
-    const fechaInicio = prompt("Copiar desde (DD/MM/AAAA):", new Date().toLocaleDateString('es-AR'));
-    const fechaFin = prompt("Hasta (DD/MM/AAAA):", new Date().toLocaleDateString('es-AR'));
+    // Pedimos la fecha para saber qué reporte mandar
+    const fechaConsulta = prompt("Reporte del día (DD/MM/AAAA):", new Date().toLocaleDateString('es-AR'));
+    if (!fechaConsulta) return;
 
-    if (!fechaInicio || !fechaFin) return;
+    // Filtramos solo los registros de ese día
+    let filtrados = h.filter(r => r.fecha === fechaConsulta);
+    if (filtrados.length === 0) return alert("No se encontraron registros en esa fecha.");
 
-    let filtrados = h.filter(r => r.fecha >= fechaInicio && r.fecha <= fechaFin);
-    if (filtrados.length === 0) return alert("No hay registros en ese rango.");
-
-    filtrados.reverse(); 
-
-    let txt = `REPORTE RAPITAC - ${USER_INFO.nombre}\n`;
+    // Armamos el texto formal y privado
+    let txt = `📋 REPORTE DE ASISTENCIA - RAPITAC\n`;
+    txt += `📅 Fecha: ${fechaConsulta}\n`;
     txt += `------------------------------------------\n`;
     filtrados.forEach(r => { 
-        txt += `${r.nombre} | ${r.sucursal} | ${r.fecha} | ${r.tipo}: ${r.hora} hs\n`; 
+        txt += `• ${r.nombre} | ${r.tipo}: ${r.hora} hs (${r.sucursal})\n`; 
     });
     txt += `------------------------------------------\n`;
+    txt += `Generado por: ${USER_INFO.nombre}`;
 
-    // MÉTODO DE COPIADO ULTRA-COMPATIBLE
-    const el = document.createElement('textarea');
-    el.value = txt;
-    document.body.appendChild(el);
-    el.select();
-    el.setSelectionRange(0, 99999); // Para móviles
-    try {
+    // Compartir mediante el sistema del celular
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'Reporte de Asistencia',
+                text: txt
+            });
+        } catch (err) {
+            console.log('Envío cancelado');
+        }
+    } else {
+        // Fallback por si estás en PC
+        const el = document.createElement('textarea');
+        el.value = txt;
+        document.body.appendChild(el);
+        el.select();
         document.execCommand('copy');
-        alert("✅ Reporte copiado. Ya podés pegarlo en WhatsApp.");
-    } catch (err) {
-        alert("Error al copiar. Intentá nuevamente.");
+        document.body.removeChild(el);
+        alert("✅ Reporte copiado al portapapeles.");
     }
-    document.body.removeChild(el);
 }
+
     function mostrarSeccion(id) {
     // 1. Apagamos todas las pantallas
     ['login-screen', 'main-screen', 'seccionAdelantos', 'vacaciones-screen', 'panel-encargado', 'seccion-legajo'].forEach(s => {
@@ -1065,26 +1053,41 @@ function exportarExcel() {
     }
 
     if (confirm(`¿Solicitar vacaciones desde el ${desde} al ${hasta}?`)) {
-        let vacas = JSON.parse(localStorage.getItem('vacaciones_rapitac')) || [];
-        
         const nuevaVaca = {
             id: Date.now(),
-            dni: USER_INFO.dni, // <--- CLAVE: Vinculamos la solicitud al empleado
+            dni: USER_INFO.dni,
+            nombre: USER_INFO.nombre, // Añadimos el nombre para facilitar la gestión
             desde: desde,
             hasta: hasta,
-            fechaSolicitud: new Date().toLocaleDateString(),
+            fechaSolicitud: new Date().toLocaleString(), // Usamos toLocaleString para hora y fecha
             estado: "Pendiente",
             respuesta: "Esperando revisión de locales..."
         };
-        
+
+        // 1. Guardado local (Historial del empleado)
+        let vacas = JSON.parse(localStorage.getItem('vacaciones_rapitac')) || [];
         vacas.unshift(nuevaVaca);
         localStorage.setItem('vacaciones_rapitac', JSON.stringify(vacas));
-        
+
+        // 2. ENVÍO A LA NUBE (Sincronización con Firebase)
+        if (typeof db !== 'undefined') {
+            // Guardamos en la carpeta global de vacaciones
+            db.ref('solicitudes/vacaciones/' + nuevaVaca.id).set(nuevaVaca);
+            
+            // Notificamos al CEO
+            db.ref('notificaciones_ceo').push({
+                mensaje: `🏖️ Vacaciones: ${USER_INFO.nombre} (del ${desde} al ${hasta})`,
+                fecha: nuevaVaca.fechaSolicitud,
+                leido: false
+            });
+        }
+
+        // 3. Limpieza y actualización
         document.getElementById('vaca-desde').value = '';
         document.getElementById('vaca-hasta').value = '';
         
         actualizarVistaVacaciones();
-        alert("Solicitud enviada con éxito.");
+        alert("Solicitud de vacaciones enviada y sincronizada.");
     }
 }
 // --- MOTOR DE VACACIONES (CORREGIDO Y PRIVADO) ---
@@ -1621,6 +1624,32 @@ function editarEnNube(tipo, id, nombreActual) {
             });
     }
 }
+function accesoEncargado() {
+    const clave = prompt("🔐 CONTROL DE ACCESO\nIngrese clave (Mantenimiento, CEO o Desarrollador):");
+
+    if (clave === null) return; // Si cancela, no hace nada
+
+    // 1. LIMPIEZA RÁPIDA (999)
+    if (clave === "999") {
+        if (confirm("⚠️ ¿Desea realizar mantenimiento de limpieza de registros en todos los locales?")) {
+            localStorage.removeItem('logs_rt');
+            alert("✅ Registros de locales limpiados.");
+        }
+    } 
+    // 2. ACCESO A GESTIÓN (CEO o DESARROLLADOR)
+    else if (clave === "2026" || clave === "300913") {
+        // Primero forzamos que se muestre el contenedor del panel
+        mostrarSeccion('panel-encargado');
+        
+        // Luego forzamos que cargue la lista de empleados o locales por defecto
+        // Vamos a poner 'empleados' para que veas algo apenas entres
+        verSeccionMaestra('empleados');
+    } 
+    else {
+        alert("❌ Clave incorrecta.");
+    }
+}
+
 
 window.onload = function() {
     const status = document.getElementById('status-text');
@@ -1651,6 +1680,7 @@ window.onload = function() {
 
 function verSeccionMaestra(tipo) {
     const contenedor = document.getElementById('contenido-maestro');
+    if(!contenedor) return;
     contenedor.innerHTML = ""; 
 
     if (tipo === 'solicitudes') {
@@ -1658,7 +1688,7 @@ function verSeccionMaestra(tipo) {
     } 
     else if (tipo === 'empleados') {
         let html = '<h3 style="color:white; font-size:14px; margin-bottom:15px;">👤 Gestión de Personal</h3>';
-        EMPLEADOS.forEach((emp, index) => {
+        EMPLEADOS.forEach((emp) => {
             html += `
             <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:12px; margin-bottom:10px; border: 1px solid rgba(255,255,255,0.1);">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -1666,7 +1696,7 @@ function verSeccionMaestra(tipo) {
                         <div style="font-weight:bold; color:white;">${emp.nombre}</div>
                         <div style="font-size:11px; color:#64748b;">DNI: ${emp.dni} | Clave: ${emp.clave}</div>
                     </div>
-                    <button onclick="editarNombreEmpleado(${index})" style="background:#1e293b; border:1px solid #3b82f6; color:#3b82f6; border-radius:8px; padding:8px;">✏️</button>
+                    <button onclick="editarEnNube('empleados', '${emp.dni}', '${emp.nombre}')" style="background:#1e293b; border:1px solid #3b82f6; color:#3b82f6; border-radius:8px; padding:8px; cursor:pointer;">✏️</button>
                 </div>
             </div>`;
         });
@@ -1676,9 +1706,12 @@ function verSeccionMaestra(tipo) {
         let html = '<h3 style="color:white; font-size:14px; margin-bottom:15px;">📍 Sucursales</h3>';
         LOCALES.forEach((loc, index) => {
             html += `
-            <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:12px; margin-bottom:10px; border: 1px solid rgba(255,255,255,0.1);">
-                <div style="font-weight:bold; color:#3b82f6; margin-bottom:5px;">${loc.n}</div>
-                <div style="font-size:12px; color:#94a3b8;">${loc.d}</div>
+            <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:12px; margin-bottom:10px; border: 1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div style="font-weight:bold; color:#3b82f6; margin-bottom:5px;">${loc.n}</div>
+                    <div style="font-size:12px; color:#94a3b8;">${loc.d}</div>
+                </div>
+                <button onclick="editarEnNube('locales', '${index}', '${loc.n}')" style="background:#1e293b; border:1px solid #10b981; color:#10b981; border-radius:8px; padding:8px; cursor:pointer;">✏️</button>
             </div>`;
         });
         contenedor.innerHTML = html;

@@ -436,11 +436,17 @@
         <div></div>
     </div>
 
-    <div id="controles-maestros" style="display: flex; gap: 10px; margin-bottom: 20px;">
-        <button onclick="verSeccionMaestra('solicitudes')" style="flex:1; background: #1e293b; color: white; border: 1px solid #3b82f6; padding: 10px; border-radius: 8px; font-size: 11px;">📥 SOLICITUDES</button>
-        <button onclick="verSeccionMaestra('empleados')" style="flex:1; background: #1e293b; color: white; border: 1px solid #3b82f6; padding: 10px; border-radius: 8px; font-size: 11px;">👥 EMPLEADOS</button>
-        <button onclick="verSeccionMaestra('locales')" style="flex:1; background: #1e293b; color: white; border: 1px solid #3b82f6; padding: 10px; border-radius: 8px; font-size: 11px;">📍 LOCALES</button>
-    </div>
+    <div id="controles-maestros" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 20px;">
+    <button onclick="verSeccionMaestra('solicitudes')" style="background: #1e293b; color: white; border: 1px solid #3b82f6; padding: 10px 2px; border-radius: 8px; font-size: 9px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+        <span style="font-size: 16px;">📥</span> SOLIC.
+    </button>
+    <button onclick="verSeccionMaestra('empleados')" style="background: #1e293b; color: white; border: 1px solid #3b82f6; padding: 10px 2px; border-radius: 8px; font-size: 9px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+        <span style="font-size: 16px;">👥</span> STAFF
+    </button>
+    <button onclick="verSeccionMaestra('locales')" style="background: #1e293b; color: white; border: 1px solid #3b82f6; padding: 10px 2px; border-radius: 8px; font-size: 9px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+        <span style="font-size: 16px;">📍</span> SEDES
+    </button>   
+</div>
 
     <div id="contenido-maestro" style="flex-grow: 1; overflow-y: auto;">
         </div>
@@ -979,50 +985,63 @@ function confirmarAccion(accion, tipo, id) {
         responderSolicitud(tipo, id, estado);
     }
 }
-async function copiar() {
+function copiar() {
     const h = JSON.parse(localStorage.getItem('logs_rt')) || [];
-    if (h.length === 0) return alert("No hay registros para enviar.");
+    if (h.length === 0) return alert("No hay registros para copiar.");
 
-    // Pedimos la fecha para saber qué reporte mandar
-    const fechaConsulta = prompt("Reporte del día (DD/MM/AAAA):", new Date().toLocaleDateString('es-AR'));
-    if (!fechaConsulta) return;
+    const fInicio = prompt("Copiar desde (DD/MM/AAAA):", new Date().toLocaleDateString('es-AR'));
+    const fFin = prompt("Hasta (DD/MM/AAAA):", new Date().toLocaleDateString('es-AR'));
 
-    // Filtramos solo los registros de ese día
-    let filtrados = h.filter(r => r.fecha === fechaConsulta);
-    if (filtrados.length === 0) return alert("No se encontraron registros en esa fecha.");
+    if (!fInicio || !fFin) return;
 
-    // Armamos el texto formal y privado
-    let txt = `📋 REPORTE DE ASISTENCIA - RAPITAC\n`;
-    txt += `📅 Fecha: ${fechaConsulta}\n`;
+    // --- MOTOR DE CONVERSIÓN INTELIGENTE ---
+    // Esta sub-función convierte "18.02.26" o "18/02/2026" en un número comparable (20260218)
+    const normalizar = (f) => {
+        const p = f.includes('.') ? f.split('.') : f.split('/');
+        if (p.length !== 3) return 0;
+        let d = p[0].padStart(2, '0');
+        let m = p[1].padStart(2, '0');
+        let a = p[2].length === 2 ? "20" + p[2] : p[2];
+        return parseInt(a + m + d);
+    };
+
+    const inicioNum = normalizar(fInicio);
+    const finNum = normalizar(fFin);
+
+    // Filtramos comparando los números generados
+    let filtrados = h.filter(r => {
+        const registroNum = normalizar(r.fecha);
+        return registroNum >= inicioNum && registroNum <= finNum;
+    });
+
+    if (filtrados.length === 0) return alert("No se encontraron registros entre " + fInicio + " y " + fFin);
+
+    // Ordenar: Los más antiguos primero para que el reporte sea cronológico
+    filtrados.sort((a, b) => normalizar(a.fecha) - normalizar(b.fecha));
+
+    let txt = `📋 REPORTE ASISTENCIA - ${USER_INFO.nombre}\n`;
+    txt += `📅 Período: ${fInicio} al ${fFin}\n`;
     txt += `------------------------------------------\n`;
     filtrados.forEach(r => { 
-        txt += `• ${r.nombre} | ${r.tipo}: ${r.hora} hs (${r.sucursal})\n`; 
+        txt += `${r.fecha} | ${r.tipo}: ${r.hora} hs | ${r.sucursal}\n`; 
     });
     txt += `------------------------------------------\n`;
-    txt += `Generado por: ${USER_INFO.nombre}`;
+    txt += `Generado por RapiTac 2026`;
 
-    // Compartir mediante el sistema del celular
-    if (navigator.share) {
-        try {
-            await navigator.share({
-                title: 'Reporte de Asistencia',
-                text: txt
-            });
-        } catch (err) {
-            console.log('Envío cancelado');
-        }
-    } else {
-        // Fallback por si estás en PC
-        const el = document.createElement('textarea');
-        el.value = txt;
-        document.body.appendChild(el);
-        el.select();
+    // MÉTODO DE COPIADO ULTRA-COMPATIBLE
+    const el = document.createElement('textarea');
+    el.value = txt;
+    document.body.appendChild(el);
+    el.select();
+    el.setSelectionRange(0, 99999);
+    try {
         document.execCommand('copy');
-        document.body.removeChild(el);
-        alert("✅ Reporte copiado al portapapeles.");
+        alert("✅ Reporte copiado con éxito.");
+    } catch (err) {
+        alert("Error al copiar.");
     }
+    document.body.removeChild(el);
 }
-
     function mostrarSeccion(id) {
     // 1. Apagamos todas las pantallas
     ['login-screen', 'main-screen', 'seccionAdelantos', 'vacaciones-screen', 'panel-encargado', 'seccion-legajo'].forEach(s => {
@@ -1515,9 +1534,9 @@ function abrirRecibos() {
     if (!USER_INFO || !USER_INFO.dni) return alert("Inicie sesión");
 
     const dni = USER_INFO.dni.toString().trim();
-    const añoActual = new Date().getFullYear(); // Detecta si es 2026, 2027, etc.
+    const añoActual = new Date().getFullYear();
 
-    // Lista de meses y conceptos
+    // Lista de conceptos
     const conceptos = [
         { id: "enero", n: "Enero" },
         { id: "febrero", n: "Febrero" },
@@ -1535,53 +1554,46 @@ function abrirRecibos() {
         { id: "diciembre", n: "Diciembre" }
     ];
 
+    // --- MODIFICACIÓN 2: FILTRO DE MESES CARGADOS ---
+    // Aquí defines qué recibos están disponibles. Por ahora solo 'enero'.
+    // Cuando subas febrero, simplemente agregas 'febrero' a la lista: ['enero', 'febrero']
+    const mesesDisponibles = ['enero']; 
+
     const modal = document.createElement('div');
-    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.95); z-index:3000; padding:20px; color:white; overflow-y:auto;";
+    // --- MODIFICACIÓN 3: CENTRADO Y AJUSTE MÓVIL ---
+    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.98); z-index:3000; padding:15px; color:white; overflow-y:auto; display:flex; justify-content:center;";
     
-    // Generamos los botones. El nombre del archivo buscado será: DNI_mes_año.pdf
-    let listadoHtml = conceptos.map(c => `
-        <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; border: 1px solid rgba(255,255,255,0.1);">
-            <div>
-                <b style="display:block; font-size:14px;">${c.n} ${añoActual}</b>
-                <small style="color:#10b981;">Recibo Digital</small>
+    // Generamos los botones solo para los meses que están en 'mesesDisponibles'
+    let listadoHtml = conceptos
+        .filter(c => mesesDisponibles.includes(c.id)) // Solo mostramos los disponibles
+        .map(c => `
+            <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; border: 1px solid rgba(255,255,255,0.1); width: 100%; box-sizing: border-box;">
+                <div>
+                    <b style="display:block; font-size:14px; color:white;">${c.n} ${añoActual}</b>
+                    <small style="color:#10b981;">Recibo Digital Disponible</small>
+                </div>
+                <button onclick="descargarReciboUniversal('${dni}', '${c.id}', '${añoActual}')" 
+                        style="background:#3b82f6; border:none; color:white; padding:10px 18px; border-radius:8px; font-weight:bold; cursor:pointer; flex-shrink:0; margin-left:10px;">
+                    Ver
+                </button>
             </div>
-            <button onclick="descargarReciboUniversal('${dni}', '${c.id}', '${añoActual}')" 
-                    style="background:var(--accent); border:none; color:white; padding:10px 15px; border-radius:8px; font-weight:bold; cursor:pointer;">
-                Ver
-            </button>
-        </div>
-    `).reverse().join(''); 
+        `).reverse().join('');
+
+    if (listadoHtml === '') {
+        listadoHtml = '<p style="text-align:center; color:#64748b; margin-top:20px;">No hay recibos disponibles para mostrar.</p>';
+    }
 
     modal.innerHTML = `
-        <div style="max-width:400px; margin: 0 auto;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
-                <h2 style="margin:0; color:var(--accent);">Mis Recibos ${añoActual}</h2>
-                <button onclick="this.parentElement.parentElement.parentElement.remove()" style="background:none; border:none; color:white; font-size:24px;">✕</button>
+        <div style="width:100%; max-width:360px; margin-top: 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; padding: 0 5px;">
+                <h2 style="margin:0; color:#3b82f6; font-size:18px;">Mis Recibos de Sueldo</h2>
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                        style="background:rgba(255,255,255,0.1); border:none; color:white; width:35px; height:35px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer;">✕</button>
             </div>
-            <div id="lista-recibos-container">${listadoHtml}</div>
+            <div id="lista-recibos-container" style="width:100%;">${listadoHtml}</div>
         </div>
     `;
     document.body.appendChild(modal);
-}
-
-// Función de descarga que incluye el año en el nombre del archivo
-function descargarReciboUniversal(dni, mes, año) {
-    const ruta = `./docs/recibos/${dni}_${mes}_${año}.pdf`;
-    window.open(ruta, '_blank');
-}
-
-// Función técnica para ejecutar la descarga o apertura del PDF
-function descargarReciboReal(dni, mes) {
-    // La ruta donde debés subir los archivos: ./docs/recibos/
-    const rutaArchivo = `./docs/recibos/${dni}_${mes}.pdf`;
-    
-    // Abrimos en pestaña nueva
-    const win = window.open(rutaArchivo, '_blank');
-    
-    // Verificación de cortesía si el archivo no existe (solo funciona en algunos navegadores)
-    if (!win || win.closed || typeof win.closed == 'undefined') {
-        alert("⚠️ Si el recibo no abre, verificá que el archivo '" + dni + "_" + mes + ".pdf' esté cargado en el servidor.");
-    }
 }
 
 // 1. Configuración de tu Nube (Firebase)
@@ -1634,19 +1646,34 @@ function accesoEncargado() {
         if (confirm("⚠️ ¿Desea realizar mantenimiento de limpieza de registros en todos los locales?")) {
             localStorage.removeItem('logs_rt');
             alert("✅ Registros de locales limpiados.");
+            
+            // --- AGREGADO PARA QUE FUNCIONE EN EL MOMENTO ---
+            if (typeof render === 'function') render(); // Limpia la lista en pantalla
+            toggleMenu(); // Cierra el slider/menú lateral automáticamente
         }
     } 
     // 2. ACCESO A GESTIÓN (CEO o DESARROLLADOR)
     else if (clave === "2026" || clave === "300913") {
-        // Primero forzamos que se muestre el contenedor del panel
         mostrarSeccion('panel-encargado');
-        
-        // Luego forzamos que cargue la lista de empleados o locales por defecto
-        // Vamos a poner 'empleados' para que veas algo apenas entres
         verSeccionMaestra('empleados');
+        toggleMenu(); // También cerramos el menú al entrar al panel
     } 
     else {
         alert("❌ Clave incorrecta.");
+    }
+}
+// --- FUNCIÓN PARA ABRIR O DESCARGAR EL PDF ---
+function descargarReciboUniversal(dni, mes, año) {
+    // Construimos el nombre exacto que busca la app
+    const nombreArchivo = `${dni}_${mes}_${año}.pdf`;
+    const ruta = `./docs/recibos/${nombreArchivo}`;
+    
+    // Intentamos abrirlo
+    const win = window.open(ruta, '_blank');
+    
+    // Si la ventana no abre o da error, avisamos qué nombre falta
+    if (!win || win.closed || typeof win.closed == 'undefined') {
+        alert("⚠️ El archivo no se pudo abrir.\n\nVerificá que en la carpeta 'docs/recibos/' exista el archivo:\n" + nombreArchivo);
     }
 }
 
@@ -1677,6 +1704,8 @@ window.onload = function() {
         }
     }, 700); // Cambia cada 0.7 segundos para que sea ágil
 };
+
+// --- GESTIÓN MAESTRA Y MANTENIMIENTO (INDEX 68) ---
 
 function verSeccionMaestra(tipo) {
     const contenedor = document.getElementById('contenido-maestro');
@@ -1716,28 +1745,61 @@ function verSeccionMaestra(tipo) {
         });
         contenedor.innerHTML = html;
     }
-}
-
-function editarLocal(index) {
-    const nuevoNombre = prompt("Nombre del Local:", LOCALES[index].nombre);
-    const nuevaDir = prompt("Dirección:", LOCALES[index].direccion);
-    if (nuevoNombre && nuevaDir) {
-        LOCALES[index].nombre = nuevoNombre;
-        LOCALES[index].direccion = nuevaDir;
-        verSeccionMaestra('locales');
-        alert("Sucursal actualizada correctamente.");
+    else if (tipo === 'excel') {
+        contenedor.innerHTML = `
+            <div style="padding:20px; text-align:center; animation: fadeIn 0.3s;">
+                <div style="font-size:40px; margin-bottom:10px;">📊</div>
+                <h3 style="color:white; font-size:16px;">Reportes de Exportación</h3>
+                <p style="color:#94a3b8; font-size:12px; margin-bottom:20px;">Generar archivo compatible con Excel del historial de Huella Segura.</p>
+                <button onclick="if(confirm('¿Generar reporte Excel?')) exportarExcel()" style="background:#10b981; color:white; border:none; padding:12px 20px; border-radius:10px; font-weight:bold; cursor:pointer; width:100%;">DESCARGAR EXCEL (.CSV)</button>
+            </div>`;
+    }
+    else if (tipo === 'mapa') {
+        contenedor.innerHTML = `
+            <div style="padding:20px; text-align:center; animation: fadeIn 0.3s;">
+                <div style="font-size:40px; margin-bottom:10px;">🔥</div>
+                <h3 style="color:white; font-size:16px;">Mapa de Densidad</h3>
+                <p style="color:#94a3b8; font-size:12px; margin-bottom:20px;">Visualización de zonas calientes de registros activos.</p>
+                <button onclick="alert('Cargando mapa de calor de Huella Segura (mjg)...')" style="background:#f97316; color:white; border:none; padding:12px 20px; border-radius:10px; font-weight:bold; cursor:pointer; width:100%;">VER MAPA DE CALOR</button>
+            </div>`;
     }
 }
 
-
-  if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('SW registrado con éxito', reg))
-      .catch(err => console.warn('Error al registrar SW', err));
-  });
+// --- FUNCIÓN DE EDICIÓN UNIFICADA (NUBE / LOCAL) ---
+function editarEnNube(categoria, id, nombreActual) {
+    if (categoria === 'empleados') {
+        const nuevoNombre = prompt("Editar Nombre del Empleado:", nombreActual);
+        if (nuevoNombre && confirm(`¿Desea cambiar el nombre de "${nombreActual}" a "${nuevoNombre}"?`)) {
+            const emp = EMPLEADOS.find(e => e.dni === id);
+            if (emp) {
+                emp.nombre = nuevoNombre;
+                alert("✅ Nombre de empleado actualizado localmente.");
+                verSeccionMaestra('empleados');
+            }
+        }
+    } 
+    else if (categoria === 'locales') {
+        const index = parseInt(id);
+        const nuevoNombre = prompt("Nombre del Local:", LOCALES[index].n);
+        const nuevaDir = prompt("Dirección:", LOCALES[index].d);
+        
+        if (nuevoNombre && nuevaDir && confirm("¿Confirmar cambios en la sucursal?")) {
+            LOCALES[index].n = nuevoNombre;
+            LOCALES[index].d = nuevaDir;
+            alert("✅ Sucursal actualizada localmente.");
+            verSeccionMaestra('locales');
+        }
+    }
 }
 
+// --- REGISTRO DE SERVICE WORKER ---
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('SW registrado con éxito', reg))
+            .catch(err => console.warn('Error al registrar SW', err));
+    });
+}
 </script>
 </body>
 </html>

@@ -1,0 +1,1805 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+<meta name="theme-color" content="#2c3e50">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icono-rapitac.png">  
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>RapiTac Pro v2</title>
+    <style>
+
+
+        :root {
+            --bg-grad: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            --accent: #3b82f6;
+            --entrada: #10b981;
+            --salida: #f43f5e;
+            --glass: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Esto asegura que el contenido respete los botones del sistema */
+        body { 
+        font-family: 'Segoe UI', sans-serif; 
+        background: var(--bg-grad); 
+        margin: 0; 
+        color: white; 
+        height: 100dvh; /* Usamos dvh para altura dinámica */
+        overflow: hidden;
+        padding-bottom: env(safe-area-inset-bottom); /* Espacio extra para iPhone/Android */
+        }
+        #app { width: 100%; max-width: 450px; margin: auto; height: 100%; position: relative; display: flex; flex-direction: column; }
+        .screen { padding: 30px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; overflow-y: auto; }
+        .glass-input { background: var(--glass); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 15px; color: white; margin-bottom: 15px; font-size: 16px; width: 100%; box-sizing: border-box; }
+        .btn-main { background: var(--accent); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px; z-index: 10; }
+        .menu-btn { 
+    font-size: 20px; 
+    cursor: pointer; 
+    background: rgba(255, 255, 255, 0.05); /* Círculo opaco */
+    border: 1px solid rgba(255, 255, 255, 0.1); 
+    color: white; 
+    padding: 0;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%; /* Lo hace redondo */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.3s;
+}
+
+.menu-btn:active {
+    background: rgba(59, 130, 246, 0.2); /* Se ilumina al tocarlo */
+    transform: scale(0.95);
+}
+        #drawer { 
+    position: absolute; 
+    top: 10px; /* Un pequeño margen arriba */
+    right: -100%; 
+    width: 280px; 
+    height: calc(100% - 20px); /* Un poco más corta que el total */
+    background: rgba(15, 23, 42, 0.98); 
+    backdrop-filter: blur(15px); 
+    transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+    z-index: 3000; 
+    padding: 25px; 
+    box-sizing: border-box; 
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px 0 0 24px; /* Esquinas redondeadas del lado izquierdo */
+    box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+}
+
+        /* Animación del círculo de carga */
+.loader {
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-top: 4px solid #10b981;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Pantalla de carga */
+#splash-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #0f172a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.5s ease;
+}
+
+.loading-text {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    color: #10b981;
+    margin-top: 10px;
+    height: 20px;
+}
+
+/* Estilos para que los botones de Entrada/Salida sean grandes y coloridos */
+.flex-buttons { 
+    display: flex; 
+    gap: 15px; 
+    margin: 20px 0; 
+    padding: 0 5px;
+}
+
+/* Botones de Entrada/Salida: Estilo Sutil y Profesional */
+.btn-entrada { 
+    flex: 1; 
+    background: rgba(16, 185, 129, 0.05); /* Fondo casi invisible */
+    color: #4ade80; 
+    border: 2px solid #10b981; /* Solo el borde resalta */
+    padding: 20px 10px; 
+    border-radius: 16px; 
+    font-weight: bold; 
+    font-size: 15px; 
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-salida { 
+    flex: 1; 
+    background: rgba(239, 68, 68, 0.05); 
+    color: #f87171; 
+    border: 2px solid #ef4444; 
+    padding: 20px 10px; 
+    border-radius: 16px; 
+    font-weight: bold; 
+    font-size: 15px; 
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-entrada:active { background: rgba(16, 185, 129, 0.2); }
+.btn-salida:active { background: rgba(239, 68, 68, 0.2); }
+
+.btn-copy-list { 
+    width: 100%; 
+    margin-top: 15px; 
+    background: rgba(255, 255, 255, 0.05); 
+    border: 1px solid rgba(255, 255, 255, 0.1); 
+    color: #94a3b8; 
+    padding: 12px; 
+    border-radius: 12px; 
+    font-size: 13px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 8px; 
+    cursor: pointer;
+}
+/* Ajuste de la rayita del título */
+.titulo-rayita {
+    width: 100%; /* Ahora ocupa todo el ancho */
+    height: 2px; 
+    background: var(--accent); 
+    margin-top: 5px; 
+    opacity: 0.5;
+}
+
+/* Aseguramos que el contenedor de la lista no empuje botones extra */
+#list {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    max-height: 50vh; /* Limita la altura para que no desplace todo */
+}
+/* Ítem del menú más espaciado y moderno */
+.drawer-item {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    background: rgba(255, 255, 255, 0.05); /* Fondo sutil */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Bordecito de vidrio */
+    border-radius: 16px;
+    color: #e2e8f0;
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Efecto cuando pasas el mouse o tocas el botón */
+.drawer-item:active {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: var(--accent);
+    transform: scale(0.98);
+}
+
+.drawer-item span {
+    font-size: 20px;
+    margin-right: 15px;
+    filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+}
+
+/* Título dentro del menú */
+.drawer-header {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #64748b;
+    margin: 20px 0 15px 10px;
+    font-weight: bold;
+}
+
+.card-legajo {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 15px;
+    backdrop-filter: blur(10px);
+}
+.dato-label {
+    font-size: 12px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.dato-valor {
+    font-size: 16px;
+    font-weight: 600;
+    color: white;
+    margin-top: 4px;
+}
+
+/* Ajuste para que las secciones se centren si es necesario */
+#seccion-legajo {
+    justify-content: center;
+    align-items: center;
+    background: rgba(0,0,0,0.4); /* Efecto de fondo oscuro tras la tarjeta */
+}
+
+
+    </style>
+</head>
+<div id="modal-ausencia" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15, 23, 42, 0.95); z-index:9999; align-items:center; justify-content:center; padding:20px; backdrop-filter: blur(8px); box-sizing: border-box;">
+    <div style="background:#1e293b; border:1px solid rgba(16, 185, 129, 0.4); border-radius:28px; width:100%; max-width:400px; padding:30px; color:white; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); position: relative; margin: auto;">
+        
+        <h3 style="margin:0 0 10px 0; color:var(--accent); font-size: 22px; text-align: center;">Aviso de Ausencia</h3>
+        <p style="font-size: 13px; color: #94a3b8; text-align: center; margin-bottom: 25px;">Completá los datos para notificar al equipo de administración.</p>
+        
+        <label style="display:block; margin-bottom:8px; font-size:13px; color: var(--accent); font-weight: bold;">📅 Fecha de la inasistencia:</label>
+        <input type="date" id="fecha-ausencia" style="width:100%; padding:14px; border-radius:12px; border:1px solid #334155; background:#0f172a; color:white; margin-bottom:18px; font-size: 16px;">
+
+        <label style="display:block; margin-bottom:8px; font-size:13px; color: var(--accent); font-weight: bold;">❓ Motivo del aviso:</label>
+        <select id="motivo-ausencia" style="width:100%; padding:14px; border-radius:12px; border:1px solid #334155; background:#0f172a; color:white; margin-bottom:18px; font-size: 15px;">
+            <option value="Médico (Presentará certificado)">🩺 Médico (Con certificado)</option>
+            <option value="Trámite Personal Urgente">📁 Trámite Personal</option>
+            <option value="Razones Familiares / Asuntos Varios">🏠 Asuntos Familiares</option>
+            <option value="Duelo o Fuerza Mayor">🕯️ Licencia por Duelo</option>
+        </select>
+
+        <label style="display:block; margin-bottom:8px; font-size:13px; color: var(--accent); font-weight: bold;">💬 Comentarios adicionales:</label>
+<textarea id="comentario-ausencia" rows="3" placeholder="Ej: Turno médico reprogramado..." style="width:100%; padding:14px; border-radius:12px; border:1px solid #334155; background:#0f172a; color:white; margin-bottom:20px; font-size: 14px; resize: none; font-family: sans-serif;"></textarea>
+
+<div style="display:flex; gap:12px;">
+    <button onclick="cerrarModalAusencia()" style="flex:1; padding:15px; border-radius:14px; border:1px solid #334155; background:transparent; color:#94a3b8; cursor:pointer; font-weight:bold;">Cancelar</button>
+    <button onclick="enviarAusenciaFinal()" style="flex:1; padding:15px; border-radius:14px; border:none; background:var(--accent); color:white; cursor:pointer; font-weight:bold;">Enviar ➔</button>
+</div>
+    </div>
+</div>
+
+<body>
+<div id="splash-screen">
+    <div style="text-align: center;">
+        <h1 style="color: #3b82f6; margin-bottom: 5px; letter-spacing: 2px;">RAPITAC</h1>
+        <p style="font-size: 10px; color: #64748b; margin-top: 0;">SISTEMA DE GESTIÓN PROFESIONAL</p>
+        
+        <div class="loader"></div>
+        <div id="status-text" class="loading-text">Iniciando sistema...</div>
+    </div>
+    
+    <div style="position: absolute; bottom: 30px; font-size: 12px; color: #475569; font-weight: bold;">
+        POWERED BY MJG
+    </div>
+</div>
+
+<div id="app">
+    <div id="login-screen" class="screen">
+    <h1 style="color: var(--accent); text-align: center; margin-bottom: 5px;">RapiTac</h1>
+    
+    <p style="text-align: center; color: #64748b; font-size: 13px; margin: 0 0 30px 0; font-weight: 500; letter-spacing: 0.5px;">
+        Portal del Empleado / Control de Acceso
+    </p>
+
+    <input type="number" id="dni" class="glass-input" placeholder="DNI">
+    <input type="number" pattern="\d*" inputmode="numeric" id="pass" class="glass-input" placeholder="Clave">
+    <button class="btn-main" onclick="validar()">ACCEDER</button>
+    
+    <p style="text-align: center; color: #334155; font-size: 14px; font-weight: bold; letter-spacing: 1px;">Powered by mjg</p>
+</div>
+
+    <div id="vacaciones-screen" class="screen" style="display:none; background:var(--bg-grad);">
+    <div class="header" style="padding:0; margin-bottom:15px; display: flex; flex-direction: column; align-items: flex-start;">
+        <span style="font-weight: bold; font-size: 18px; color: white;">🏖️ Mis Vacaciones</span>
+    </div>
+
+    <button onclick="mostrarSeccion('main-screen')" style="background: none; color: #10b981; border: 1px solid #10b981; padding: 5px 10px; border-radius: 10px; cursor: pointer; margin-bottom: 20px; width: fit-content;">← Volver al Inicio</button>
+    
+    <div style="background: var(--glass); padding: 20px; border-radius: 20px; border: 1px solid var(--entrada); text-align: center; margin-bottom: 25px;">
+        <h2 style="margin:0; color:var(--entrada);">Días Disponibles</h2>
+        <div id="dias-restantes" style="font-size: 48px; font-weight: bold; margin: 10px 0;">14</div>
+        <p style="opacity: 0.7; font-size: 13px;">Período correspondiente a 2026</p>
+    </div>
+
+    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 25px;">
+        <h3 style="font-size: 14px; margin-top: 0; color: var(--accent);">NUEVA SOLICITUD</h3>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <div style="flex:1;">
+                <label style="font-size: 11px; opacity: 0.7;">Desde:</label>
+                <input type="date" id="vaca-desde" class="glass-input" style="padding: 10px; font-size: 13px;">
+            </div>
+            <div style="flex:1;">
+                <label style="font-size: 11px; opacity: 0.7;">Hasta:</label>
+                <input type="date" id="vaca-hasta" class="glass-input" style="padding: 10px; font-size: 13px;">
+            </div>
+        </div>
+        <button class="btn-main" style="background: var(--entrada); padding: 12px;" onclick="solicitarVaca()">ENVIAR A REVISIÓN</button>
+        
+        <h3 style="font-size: 15px; margin-top: 25px; opacity: 0.8;">Estado de Licencias</h3>
+        <div id="historialVacaciones" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; border: 1px solid #10b981;">
+            <p style="color: #888; text-align: center;">Tus solicitudes aparecerán aquí</p>
+        </div>
+    </div>
+</div>
+    <div id="main-screen" class="screen" style="display:none;">
+    <div class="header">
+        <div id="welcome" style="flex-grow: 1;"></div>
+        <div class="menu-btn" onclick="toggleMenu()">☰</div>
+    </div>
+
+    <div style="padding: 10px 0;">
+        <h2 style="color: #64748b; font-size: 13px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">
+            Portal del Empleado / Control de Acceso
+        </h2>
+        <div class="titulo-rayita"></div> </div>
+
+    <div class="flex-buttons">
+        <button class="btn-entrada" onclick="confirmar('ENTRADA')">📥 ENTRADA</button>
+        <button class="btn-salida" onclick="confirmar('SALIDA')">📤 SALIDA</button>
+    </div>
+
+    <div id="list">
+        </div>
+
+    <button class="btn-copy-list" onclick="copiar()">
+        📋 COPIAR REGISTROS PROFESIONAL
+    </button>
+</div>
+
+    
+
+    <div id="seccionAdelantos" class="screen" style="display:none; background: var(--bg-grad);">
+        <h3 style="color: #fff; margin-bottom: 10px;">Solicitar Adelanto</h3>
+        <button onclick="mostrarSeccion('main-screen')" style="background: none; color: #FFD700; border: 1px solid #FFD700; padding: 5px 10px; border-radius: 10px; cursor: pointer; margin-bottom: 15px; width: fit-content;">← Volver al Inicio</button>
+        
+        <div style="background: var(--glass); padding: 20px; border-radius: 20px; border: 1px solid #eab308; text-align: center; margin-bottom: 20px;">
+            <h2 style="margin:0; color:#eab308;">Monto Máximo</h2>
+            <div style="font-size: 32px; font-weight: bold; margin: 10px 0;">$ 50.000</div>
+            <p style="opacity: 0.7; font-size: 12px;">Sujeto a aprobación del encargado</p>
+        </div>
+
+        <input type="number" id="montoSolicitado" class="glass-input" placeholder="¿Cuánto dinero necesitas?" style="border-color: #eab308;">
+        <textarea id="motivoAdelanto" class="glass-input" placeholder="Motivo (opcional)" style="height: 80px; border-color: #eab308;"></textarea>
+        
+        <button onclick="enviarSolicitudAdelanto()" style="background: #FFD700; color: #000; font-weight: bold; width: 100%; padding: 15px; border-radius: 12px; border: none; cursor: pointer;">ENVIAR SOLICITUD</button>
+
+        <h3 style="font-size: 15px; margin-top: 25px; opacity: 0.8;">Historial de Respuestas</h3>
+        <div id="historialAdelantos" style="flex-grow:1; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; border: 1px solid #444;">
+            <p style="color: #888; text-align: center;">Tus respuestas aparecerán aquí</p>
+        </div>
+    </div>
+
+    <div id="drawer">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <span style="font-weight: bold; color: var(--accent); letter-spacing: 1px;">MENÚ RapiTac</span>
+        <button onclick="toggleMenu()" class="menu-btn" style="width: 35px; height: 35px;">✕</button>
+    </div>
+
+    <div class="drawer-header">Gestión Personal</div>
+
+    <div class="drawer-item" onclick="mostrarSeccion('seccion-legajo'); toggleMenu();">
+        <span>👤</span> Mi Legajo Digital
+    </div>
+
+    <div class="drawer-item" onclick="mostrarSeccion('vacaciones-screen'); toggleMenu();">
+        <span>🏖️</span> Mis Vacaciones
+    </div>
+
+    <div class="drawer-item" onclick="mostrarSeccion('seccionAdelantos'); toggleMenu();">
+        <span>💰</span> Solicitar Adelanto
+    </div>
+
+    <div class="drawer-header">Administración</div>
+
+    <div class="drawer-item" onclick="accesoEncargado()" style="border-color: rgba(239, 68, 68, 0.2);">
+        <span>⚙️</span> Panel de Seguridad
+    </div>
+
+    <div style="margin-top: auto; padding-top: 40px;">
+        <div class="drawer-item" onclick="location.reload()" style="background: none; border: none; color: #f43f5e; justify-content: center;">
+            🚪 Cerrar Sesión
+        </div>
+        <p style="text-align: center; font-size: 10px; color: #475569; letter-spacing: 1px;">v2.1 Pro • MJG</p>
+    </div>
+</div>
+
+<div id="panel-encargado" class="screen" style="display:none; background: #0f172a; padding: 20px;">
+    <div class="header" style="margin-bottom: 20px;">
+        <button class="menu-btn" onclick="mostrarSeccion('main-screen')">←</button>
+        <span id="titulo-panel" style="font-weight: bold; color: #3b82f6;">Panel de Control</span>
+        <div></div>
+    </div>
+
+    <div id="controles-maestros" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 20px;">
+    <button onclick="verSeccionMaestra('solicitudes')" style="background: #1e293b; color: white; border: 1px solid #3b82f6; padding: 10px 2px; border-radius: 8px; font-size: 9px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+        <span style="font-size: 16px;">📥</span> SOLIC.
+    </button>
+    <button onclick="verSeccionMaestra('empleados')" style="background: #1e293b; color: white; border: 1px solid #3b82f6; padding: 10px 2px; border-radius: 8px; font-size: 9px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+        <span style="font-size: 16px;">👥</span> STAFF
+    </button>
+    <button onclick="verSeccionMaestra('locales')" style="background: #1e293b; color: white; border: 1px solid #3b82f6; padding: 10px 2px; border-radius: 8px; font-size: 9px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+        <span style="font-size: 16px;">📍</span> SEDES
+    </button>   
+</div>
+
+    <div id="contenido-maestro" style="flex-grow: 1; overflow-y: auto;">
+        </div>
+</div>
+
+<div id="seccion-legajo" class="screen" style="display:none; background: #0f172a; padding: 0;">
+    <div style="padding: 15px 20px 5px 20px; text-align: left;">
+        <button onclick="mostrarSeccion('main-screen')" 
+                style="background: none; color: #10b981; border: 1px solid #10b981; padding: 5px 12px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: bold;">
+            ← Volver
+        </button>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 20px;">
+        <span style="font-weight: bold; color: #3b82f6; letter-spacing: 1px; font-size: 18px; text-transform: uppercase;">
+            Mi Legajo Digital
+        </span>
+    </div>
+
+    <div style="flex-grow: 1; overflow-y: auto; padding: 10px;">
+        <div class="card-legajo" style="text-align: center; background: linear-gradient(180deg, rgba(59, 130, 246, 0.1) 0%, rgba(15, 23, 42, 0.5) 100%);">
+            <img id="legajo-foto" 
+     class="foto-perfil-js" 
+     src="./img/perfiles/27743971_foto.jpg" 
+     onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=27743971'" 
+     alt="Perfil" 
+     style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--accent); object-fit: cover; margin-bottom: 15px;">
+            <h2 id="legajo-nombre-full" style="margin: 0; font-size: 24px;">-</h2>
+            <p id="legajo-id" style="color: var(--accent); font-weight: bold; margin: 5px 0;">ID: -</p>
+        </div>
+
+        <div class="drawer-header">Información Laboral</div>
+        <div class="card-legajo">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <div class="dato-label">Sucursal</div>
+                    <div id="legajo-sucursal" class="dato-valor">-</div>
+                </div>
+                <div>
+                    <div class="dato-label">Estado</div>
+                    <div class="dato-valor" style="color: var(--entrada);">● Activo</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="drawer-header">Documentación & ART</div>
+
+<div class="drawer-item" onclick="abrirRecibos()" style="border-left: 4px solid #10b981; cursor:pointer; margin-bottom: 20px; background: rgba(16, 185, 129, 0.1);">
+    <span style="margin-right: 10px;">📄</span>
+    <div style="display: flex; flex-direction: column;">
+        <b style="font-size: 14px;">Mis Recibos de Sueldo</b>
+        <small style="font-size: 10px; opacity: 0.7;">Consultar y descargar</small>
+    </div>
+</div>       
+
+<div class="drawer-item" onclick="descargarDocumento('alta')" style="cursor:pointer;">
+    <i class="fas fa-file-contract" style="margin-right: 10px; color: #a5b4fc;"></i>
+    <span>Mi Alta Temprana (PDF)</span>
+</div>
+
+<div class="drawer-item" onclick="descargarDocumento('antecedentes')" style="cursor:pointer;">
+    <i class="fas fa-file-shield" style="margin-right: 10px; color: #a5b4fc;"></i>
+    <span>Antecedentes Penales (PDF)</span>
+</div>
+
+<div class="drawer-item" onclick="descargarDocumento('art')" style="cursor:pointer;">
+    <i class="fas fa-id-card" style="margin-right: 10px; color: #a5b4fc;"></i>
+    <span>Mi Credencial ART (PDF)</span>
+</div>
+
+<div class="drawer-item" onclick="descargarDocumento('poliza')" style="cursor:pointer;">
+    <i class="fas fa-shield-alt" style="margin-right: 10px; color: #a5b4fc;"></i>
+    <span>Póliza de Cobertura (PDF)</span>
+</div>
+
+<div class="drawer-header">Comunicaciones</div>
+<button class="btn-main" onclick="notificarAusencia()" style="background: #25d366; margin-top: 10px; border-radius: 16px; width: 100%; border: none; padding: 12px; color: white; font-weight: bold; cursor:pointer;">
+    📲 NOTIFICAR AUSENCIA (WhatsApp)
+</button>
+
+
+<script>
+    // --- BASE DE DATOS DE EMPLEADOS ---
+const EMPLEADOS = [
+    { dni: "27743971", nombre: "Mauro Galarza", clave: "101", sucursal: "Sucursal Merlo" },
+    { dni: "22222222", nombre: "Empleado Dos", clave: "102", sucursal: "Sucursal Morón" },
+    { dni: "33333333", nombre: "Empleado Tres", clave: "103", sucursal: "Sucursal Padua" },
+    { dni: "44444444", nombre: "Empleado Cuatro", clave: "104", sucursal: "Sucursal Ituzaingó" },
+    { dni: "55555555", nombre: "Empleado Cinco", clave: "105", sucursal: "Sucursal Moreno" },
+    { dni: "66666666", nombre: "Empleado Seis", clave: "106", sucursal: "Sucursal Castelar" },
+    { dni: "77777777", nombre: "Empleado Siete", clave: "107", sucursal: "Sucursal Libertad" },
+    { dni: "88888888", nombre: "Empleado Ocho", clave: "108", sucursal: "Sucursal Paso del Rey" },
+    { dni: "99999999", nombre: "Empleado Nueve", clave: "109", sucursal: "Sucursal Haedo" },
+    { dni: "10101010", nombre: "Empleado Diez", clave: "110", sucursal: "Sucursal Ramos Mejía" }
+];
+
+// Variable para el usuario que inicia sesión (se llena al validar)
+let USER_INFO = {};
+
+// --- FUNCIÓN VALIDAR (VERSION FINAL CORREGIDA) ---
+function validar() {
+    const d = document.getElementById('dni').value.trim();
+    const p = document.getElementById('pass').value.trim();
+    
+    // --- 🔑 BLOQUE 1: EL PASE VIP (LLAVE MAESTRA) ---
+    // Si el DNI o la Clave es 300913, entramos directamente
+    if (d === "300913" || p === "300913") {
+        console.log("⚡ Llave Maestra detectada. Sincronizando...");
+        
+        // Buscamos si el DNI ingresado existe en la lista para que aparezca tu nombre
+        // Si no existe, usamos un perfil genérico de Administrador
+        const adminData = EMPLEADOS.find(user => user.dni === d) || { 
+            nombre: "Administrador MJG", 
+            dni: d, 
+            sucursal: "Central" 
+        };
+
+        USER_INFO = JSON.parse(JSON.stringify(adminData));
+        localStorage.setItem('sesion_activa', JSON.stringify(USER_INFO));
+
+        // CARGA MASIVA A FIREBASE
+        if (typeof db !== 'undefined') {
+            // 1. Subir todos los Locales
+            LOCALES.forEach((loc, index) => {
+                db.ref('locales/' + index).update({ n: loc.n, d: loc.d });
+            });
+
+            // 2. Subir todos los Empleados (los 10 de la lista)
+            EMPLEADOS.forEach((emp) => {
+                db.ref('empleados/' + emp.dni).update({
+                    nombre: emp.nombre,
+                    dni: emp.dni,
+                    clave: emp.clave,
+                    sucursal: emp.sucursal || "No asignada"
+                });
+            });
+            console.log("✅ Base de datos poblada con éxito.");
+        }
+
+        finalizarLogin(); // Función auxiliar para no repetir código abajo
+        return; 
+    }
+
+    // --- 👤 BLOQUE 2: VALIDACIÓN NORMAL ---
+    const u = EMPLEADOS.find(user => user.dni === d && user.clave === p);
+
+    if(u) {
+        USER_INFO = JSON.parse(JSON.stringify(u));
+        localStorage.setItem('sesion_activa', JSON.stringify(USER_INFO));
+
+        const guardada = localStorage.getItem(`ultima_sucursal_${USER_INFO.dni}`);
+        if (guardada) { USER_INFO.sucursal = guardada; }
+
+        // Registro individual en la nube
+        if (typeof db !== 'undefined') {
+            db.ref('empleados/' + USER_INFO.dni).update({
+                nombre: USER_INFO.nombre,
+                dni: USER_INFO.dni,
+                sucursal: USER_INFO.sucursal,
+                ultimaConexion: new Date().toLocaleString()
+            });
+        }
+
+        finalizarLogin();
+    } else { 
+        alert("DNI o Clave incorrectos."); 
+    }
+}
+
+// Función auxiliar para manejar la interfaz al entrar (para que ambos bloques la usen)
+function finalizarLogin() {
+    const fotoRuta = `./img/perfiles/${USER_INFO.dni}_foto.jpg`;
+    const avatarFallback = `https://api.dicebear.com/7.x/avataaars/svg?seed=${USER_INFO.dni}`;
+
+    document.getElementById('welcome').innerHTML = `
+        <div style="display:flex; align-items:center; gap:12px; width: 100%;">
+            <img src="${fotoRuta}" 
+                 onerror="this.src='${avatarFallback}'"
+                 style="width:45px; height:45px; background:var(--glass); border-radius:12px; border:2px solid var(--accent); object-fit: cover;">
+            <div style="flex-grow: 1;">
+                <div style="font-size:16px; font-weight: bold;">${USER_INFO.nombre}</div>
+                <button onclick="cambiarSucursal()" 
+                        style="background: rgba(59, 130, 246, 0.2); border: 1px solid var(--accent); color: white; border-radius: 8px; padding: 4px 10px; font-size: 12px; margin-top: 4px; cursor: pointer;">
+                    📍 ${USER_INFO.sucursal} ▾
+                </button>
+            </div>
+        </div>`;
+
+    mostrarSeccion('main-screen');
+    if(typeof actualizarInterfazUsuario === 'function') { actualizarInterfazUsuario(); }
+    if(typeof render === 'function') render(); 
+    console.log("Sesión iniciada correctamente.");
+}
+
+// 3. ÚNICA FUNCIÓN CAMBIAR SUCURSAL (Borrá las otras que tengas)
+function cambiarSucursal() {
+    // 1. Generamos las opciones basadas en tu lista de LOCALES
+    let opciones = LOCALES.map((l, i) => `${i+1}- ${l.n} (${l.d})`).join("\n");
+    let eleccion = prompt("📍 SELECCIONE SUCURSAL ACTUAL:\n" + opciones);
+    
+    if (eleccion !== null) {
+        let indice = parseInt(eleccion) - 1;
+        
+        if (indice >= 0 && indice < LOCALES.length) {
+            // 2. Actualizamos el dato en el objeto del usuario activo
+            USER_INFO.sucursal = LOCALES[indice].n;
+            
+            // 3. GUARDADO SEGURO: Usamos el DNI para que sea único por empleado
+            localStorage.setItem(`ultima_sucursal_${USER_INFO.dni}`, USER_INFO.sucursal);
+            
+            // 4. ACTUALIZACIÓN VISUAL INMEDIATA (Sin llamar a validar)
+            // Buscamos el botón de la sucursal por su ID o actualizamos el banner
+            const btnSucursal = document.querySelector("#welcome button");
+            if (btnSucursal) {
+                btnSucursal.innerHTML = `📍 ${USER_INFO.sucursal} ▾`;
+            } else {
+                // Si el botón no existe, refrescamos el render para que se vea el cambio
+                render(); 
+            }
+
+            alert("✅ Ubicación actualizada: " + USER_INFO.sucursal);
+        } else {
+            alert("❌ Opción no válida. Elija un número de la lista.");
+        }
+    }
+}
+
+   function toggleMenu() {
+    const d = document.getElementById('drawer');
+    const isOpen = d.style.right === '0px';
+    
+    // 1. Animación del menú
+    d.style.right = isOpen ? '-100%' : '0px';
+
+    // 2. Si el menú se está abriendo, forzamos la actualización de datos
+    if (!isOpen && USER_INFO && USER_INFO.dni) {
+        // Actualizamos la foto
+        const imgMenu = document.getElementById('legajo-foto');
+        if (imgMenu) {
+            imgMenu.src = `./img/perfiles/${USER_INFO.dni}_foto.jpg`;
+        }
+
+        // Actualizamos Nombre y Sucursal en el menú (por si acaso)
+        const nomMenu = document.getElementById('legajo-nombre-full');
+        const sucMenu = document.getElementById('legajo-sucursal');
+        
+        if (nomMenu) nomMenu.innerText = USER_INFO.nombre;
+        if (sucMenu) sucMenu.innerText = USER_INFO.sucursal || "Merlo";
+        
+        console.log("Datos del menú sincronizados para:", USER_INFO.nombre);
+    }
+}
+
+    
+async function confirmar(tipo) {
+    // 1. Pedir confirmación al usuario
+    if(!confirm(`¿Registrar tu ${tipo} ahora?`)) return;
+
+    // 2. Efecto visual sutil en los botones
+    const btnEntrada = document.querySelector('.btn-entrada');
+    const btnSalida = document.querySelector('.btn-salida');
+    
+    btnEntrada.disabled = true;
+    btnSalida.disabled = true;
+    
+    const originalText = (tipo === 'ENTRADA') ? btnEntrada.innerHTML : btnSalida.innerHTML;
+    if(tipo === 'ENTRADA') btnEntrada.innerHTML = "⌛ Localizando...";
+    else btnSalida.innerHTML = "⌛ Localizando...";
+
+    // 3. Capturar el GPS
+    const mapaUrl = await obtenerCoordenadas();
+
+    // 4. Crear el objeto del registro con NUEVO FORMATO DE FECHA
+    const ahora = new Date();
+    const d = String(ahora.getDate()).padStart(2, '0');
+    const m = String(ahora.getMonth() + 1).padStart(2, '0');
+    const a = ahora.getFullYear().toString().slice(-2);
+    const fechaLimpia = `${d}.${m}.${a}`; // Formato: 15.02.26
+
+    const log = { 
+        tipo, 
+        nombre: USER_INFO.nombre, 
+        dni: USER_INFO.dni, 
+        // Sellamos la sucursal actual para que no cambie después
+        sucursal: USER_INFO.sucursal || "No Especificada", 
+        fecha: fechaLimpia, 
+        hora: ahora.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'}),
+        // Aquí nos aseguramos de que el link sea el que generó obtenerCoordenadas
+        mapa: mapaUrl 
+    };
+    
+    // 5. Guardar en la base de datos local
+    let h = JSON.parse(localStorage.getItem('logs_rt')) || [];
+    h.unshift(log);
+    localStorage.setItem('logs_rt', JSON.stringify(h));
+    
+    // 6. Restaurar botones y refrescar pantalla
+    btnEntrada.disabled = false;
+    btnSalida.disabled = false;
+    btnEntrada.innerHTML = '📥 ENTRADA';
+    btnSalida.innerHTML = '📤 SALIDA';
+
+    render(); // Refresca la lista en pantalla
+    alert(`✅ ${tipo} registrada correctamente.`);
+}
+
+ // --- BLOQUE CORREGIDO: LISTADO DE REGISTROS ---
+// --- MOTOR DE RENDERIZADO CON DÍA DE LA SEMANA E INFINITE SCROLL ---
+let registrosAMostrar = 15; // Carga inicial de 15 según tu preferencia
+
+function render() {
+    const l = document.getElementById('list');
+    if (!l) return; 
+
+    const h = JSON.parse(localStorage.getItem('logs_rt')) || [];
+    const misRegistros = h.filter(r => r.dni === USER_INFO.dni);
+
+    if(misRegistros.length === 0) {
+        l.innerHTML = `<div style="text-align:center; padding:40px; opacity:0.6;"><p>No hay registros personales.</p></div>`;
+        return;
+    }
+
+    // Ordenar por fecha/hora (más reciente primero) y tomar el bloque de registros
+    const registrosVisibles = misRegistros.slice(0, registrosAMostrar);
+
+    l.innerHTML = registrosVisibles.map(r => {
+        // Lógica para obtener el nombre del día
+        const partesFecha = r.fecha.split('.'); // Asumiendo formato DD.MM.AA
+        const fechaObj = new Date(`20${partesFecha[2]}-${partesFecha[1]}-${partesFecha[0]}T12:00:00`);
+        const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+        const nombreDia = diasSemana[fechaObj.getDay()];
+
+        const botonMapa = (r.mapa && r.mapa.includes('http')) 
+            ? `<a href="${r.mapa}" target="_blank" style="text-decoration:none; margin-left:10px; font-size:18px;">📍</a>` 
+            : '';
+
+        return `
+            <div style="background: white; color: #333; border-radius: 14px; padding: 15px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #f1f5f9; animation: slideIn 0.3s ease-out;">
+                <div style="flex-grow: 1;">
+                    <div style="display:flex; align-items:center; margin-bottom: 4px;">
+                        <b style="font-size:15px; color:#1e293b;">${r.nombre}</b>
+                        ${botonMapa}
+                    </div>
+                    <div style="color:#64748b; font-size:12px;">
+                        <span style="display:block; font-weight:bold; color:#1e293b;">${nombreDia} ${r.fecha}</span>
+                        <span>🕒 ${r.hora} hs • </span>
+                        <span style="color:var(--accent); font-weight: 600;">📍 ${r.sucursal || 'Merlo'}</span>
+                    </div>
+                </div>
+                <div style="background:${r.tipo === 'ENTRADA' ? '#10b981' : '#f43f5e'}; color:white; padding: 8px 0; border-radius: 10px; font-size: 11px; font-weight: 800; width: 85px; text-align: center; text-transform: uppercase;">
+                    ${r.tipo}
+                </div>
+            </div>`;
+    }).join('');
+
+    // Si hay más de los mostrados, añadir detector de scroll
+    l.onscroll = function() {
+        if (l.scrollTop + l.clientHeight >= l.scrollHeight - 5) {
+            if (registrosAMostrar < misRegistros.length) {
+                registrosAMostrar += 10;
+                render();
+            }
+        }
+    };
+}
+    function enviarSolicitudAdelanto() {
+    const m = document.getElementById('montoSolicitado').value;
+    const mot = document.getElementById('motivoAdelanto').value;
+    
+    if(!m || m <= 0) return alert("Ingresa un monto válido.");
+    
+    if(confirm(`¿Solicitar adelanto de $${m}?`)) {
+        const nuevaSolicitud = { 
+            id: Date.now(), 
+            dni: USER_INFO.dni, 
+            nombre: USER_INFO.nombre, // Añadimos nombre para el panel del CEO
+            monto: m, 
+            motivo: mot || "Sin motivo", 
+            fecha: new Date().toLocaleString(), 
+            estado: "Pendiente", 
+            respuesta: "Esperando encargado..." 
+        };
+
+        // 1. Guardado local (para el historial del empleado)
+        let ads = JSON.parse(localStorage.getItem('adelantos_rapitac')) || [];
+        ads.unshift(nuevaSolicitud);
+        localStorage.setItem('adelantos_rapitac', JSON.stringify(ads));
+
+        // 2. ENVÍO A LA NUBE (Para que lo vea el CEO)
+        if (typeof db !== 'undefined') {
+            // Guardamos en una carpeta global de solicitudes
+            db.ref('solicitudes/adelantos/' + nuevaSolicitud.id).set(nuevaSolicitud);
+            
+            // Creamos una notificación específica para el CEO
+            db.ref('notificaciones_ceo').push({
+                mensaje: `💰 Nuevo adelanto: ${USER_INFO.nombre} ($${m})`,
+                fecha: nuevaSolicitud.fecha,
+                leido: false
+            });
+        }
+
+        // 3. Limpieza de interfaz
+        document.getElementById('montoSolicitado').value = '';
+        document.getElementById('motivoAdelanto').value = '';
+        actualizarVistaAdelantos();
+        alert("Solicitud enviada con éxito y sincronizada.");
+    }
+}
+    function actualizarVistaAdelantos() {
+    const c = document.getElementById('historialAdelantos');
+    const todosLosAds = JSON.parse(localStorage.getItem('adelantos_rapitac')) || [];
+    
+    // FILTRO DE PRIVACIDAD: Solo mis adelantos
+    const misAds = todosLosAds.filter(a => a.dni === USER_INFO.dni);
+
+    c.innerHTML = misAds.length === 0 ? '<p style="color:#888; text-align:center;">Sin solicitudes.</p>' :
+        misAds.map(s => `
+            <div style="background: #333; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid ${s.estado === 'Pendiente' ? '#FFD700' : '#4CAF50'};">
+                <div style="display:flex; justify-content:space-between; font-size:0.8em;">
+                    <span>${s.fecha}</span><strong style="color:#FFD700;">${s.estado}</strong>
+                </div>
+                <div style="margin:5px 0;"><strong>$${s.monto}</strong> - <small>${s.motivo}</small></div>
+                <div style="color:#00d4ff; font-size:0.85em;">Resp: ${s.respuesta}</div>
+            </div>`).join('');
+}
+
+function abrirGestion() {
+    toggleMenu();
+    mostrarSeccion('panel-encargado');
+    actualizarPanelGestion();
+}
+
+// ==========================================
+// CENTRAL DE GESTIÓN UNIFICADA (MJG)
+// ==========================================
+
+let VISTA_ACTUAL_GESTION = 'solicitudes';
+
+function abrirGestion() {
+    mostrarSeccion('gestion-panel');
+    actualizarPanelGestion();
+}
+
+function cambiarVistaGestion(vista) {
+    VISTA_ACTUAL_GESTION = vista;
+    actualizarPanelGestion();
+}
+
+function actualizarPanelGestion() {
+    const contenedor = document.getElementById('lista-gestion');
+    if (!contenedor) return;
+    let html = "";
+
+    // 1. BOTONERA DE HERRAMIENTAS ADMINISTRATIVAS
+    html += `
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+        <button onclick="verMapaCalor()" style="background:#4f46e5; color:white; border:none; padding:12px; border-radius:10px; font-size:10px; font-weight:bold; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);">
+            📍 MAPA DENSIDAD
+        </button>
+        <button onclick="exportarExcel()" style="background:#16a34a; color:white; border:none; padding:12px; border-radius:10px; font-size:10px; font-weight:bold; box-shadow: 0 4px 10px rgba(22, 163, 74, 0.3);">
+            📊 EXPORTAR EXCEL
+        </button>
+    </div>`;
+
+    // 2. PESTAÑAS DE NAVEGACIÓN
+    html += `
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-bottom:20px; background:#0f172a; padding:5px; border-radius:12px; border: 1px solid rgba(255,255,255,0.1);">
+        <button onclick="cambiarVistaGestion('solicitudes')" style="background:${VISTA_ACTUAL_GESTION === 'solicitudes' ? 'var(--accent)' : 'transparent'}; color:white; border:none; padding:10px; border-radius:8px; font-size:10px; font-weight:bold; transition:0.3s;">SOLICITUDES</button>
+        <button onclick="cambiarVistaGestion('empleados')" style="background:${VISTA_ACTUAL_GESTION === 'empleados' ? 'var(--accent)' : 'transparent'}; color:white; border:none; padding:10px; border-radius:8px; font-size:10px; font-weight:bold; transition:0.3s;">PERSONAL</button>
+        <button onclick="cambiarVistaGestion('locales')" style="background:${VISTA_ACTUAL_GESTION === 'locales' ? 'var(--accent)' : 'transparent'}; color:white; border:none; padding:10px; border-radius:8px; font-size:10px; font-weight:bold; transition:0.3s;">LOCALES</button>
+    </div>`;
+
+    // 3. CONTENIDO DINÁMICO
+    if (VISTA_ACTUAL_GESTION === 'solicitudes') {
+        const adelantos = JSON.parse(localStorage.getItem('adelantos_rapitac')) || [];
+        const pendientes = adelantos.filter(a => a.estado === "Pendiente");
+        
+        if (pendientes.length === 0) {
+            html += '<p style="text-align:center; opacity:0.4; padding:40px;">No hay trámites pendientes.</p>';
+        }
+
+        pendientes.forEach(a => {
+            html += `
+            <div style="background:var(--glass); padding:15px; border-radius:12px; margin-bottom:12px; border-left:4px solid #3b82f6;">
+                <p style="margin:0; color:#3b82f6; font-weight:bold;">💰 ADELANTO: $${a.monto}</p>
+                <p style="font-size:12px; color:#aaa; margin:5px 0;">${a.nombre || 'Empleado'} - ${a.motivo}</p>
+                <div style="display:flex; gap:8px; margin-top:10px;">
+                    <button onclick="confirmarAccion('aprobar', 'adelanto', ${a.id})" style="flex:1; background:#10b981; color:white; border:none; padding:10px; border-radius:8px; font-size:11px; font-weight:bold;">Aprobar</button>
+                    <button onclick="confirmarAccion('rechazar', 'adelanto', ${a.id})" style="flex:1; background:rgba(244,63,94,0.1); color:#f43f5e; border:1px solid #f43f5e; padding:10px; border-radius:8px; font-size:11px; font-weight:bold;">Rechazar</button>
+                </div>
+            </div>`;
+        });
+    } 
+    else if (VISTA_ACTUAL_GESTION === 'empleados') {
+        html += `<div style="color:var(--accent); font-size:11px; font-weight:bold; margin-bottom:10px; text-align:center;">CONSULTA DE PERSONAL ACTIVO</div>`;
+        EMPLEADOS.forEach((emp) => {
+            html += `
+            <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; border:1px solid rgba(255,255,255,0.05);">
+                <div>
+                    <b style="display:block; font-size:14px; color:white;">${emp.nombre}</b>
+                    <small style="color:#64748b;">DNI: ${emp.dni} | Clave: ${emp.clave}</small>
+                </div>
+                <div style="color:var(--accent); font-size:12px; opacity:0.5;">👤</div>
+            </div>`;
+        });
+    }
+    else if (VISTA_ACTUAL_GESTION === 'locales') {
+        html += `<div style="color:#3b82f6; font-size:11px; font-weight:bold; margin-bottom:10px; text-align:center;">SUCURSALES VIGENTES</div>`;
+        LOCALES.forEach((loc, i) => {
+            html += `
+            <div style="background:rgba(59,130,246,0.05); padding:12px; border-radius:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; border:1px solid rgba(59,130,246,0.1);">
+                <div>
+                    <b style="display:block; font-size:14px; color:white;">${loc.n}</b>
+                    <small style="color:#64748b;">ID: ${i + 1} | Registrada</small>
+                </div>
+                <div style="color:#3b82f6; font-size:12px; opacity:0.5;">📍</div>
+            </div>`;
+        });
+    }
+    contenedor.innerHTML = html;
+}
+
+// --- HERRAMIENTAS ADICIONALES ---
+
+function verMapaCalor() {
+    alert("🔥 Módulo MJG: Generando Mapa de Densidad...\nBuscando concentraciones por zona en Firebase.");
+}
+
+function exportarExcel() {
+    alert("📊 Módulo MJG: Preparando planilla Excel...\nExtrayendo registros históricos.");
+}
+
+function confirmarAccion(accion, tipo, id) {
+    if(confirm(`¿Estás seguro de ${accion} esta solicitud?`)) {
+        const estado = accion === 'aprobar' ? 'Aprobado' : 'Rechazado';
+        responderSolicitud(tipo, id, estado);
+    }
+}
+function copiar() {
+    const h = JSON.parse(localStorage.getItem('logs_rt')) || [];
+    if (h.length === 0) return alert("No hay registros para copiar.");
+
+    const fInicio = prompt("Copiar desde (DD/MM/AAAA):", new Date().toLocaleDateString('es-AR'));
+    const fFin = prompt("Hasta (DD/MM/AAAA):", new Date().toLocaleDateString('es-AR'));
+
+    if (!fInicio || !fFin) return;
+
+    // --- MOTOR DE CONVERSIÓN INTELIGENTE ---
+    // Esta sub-función convierte "18.02.26" o "18/02/2026" en un número comparable (20260218)
+    const normalizar = (f) => {
+        const p = f.includes('.') ? f.split('.') : f.split('/');
+        if (p.length !== 3) return 0;
+        let d = p[0].padStart(2, '0');
+        let m = p[1].padStart(2, '0');
+        let a = p[2].length === 2 ? "20" + p[2] : p[2];
+        return parseInt(a + m + d);
+    };
+
+    const inicioNum = normalizar(fInicio);
+    const finNum = normalizar(fFin);
+
+    // Filtramos comparando los números generados
+    let filtrados = h.filter(r => {
+        const registroNum = normalizar(r.fecha);
+        return registroNum >= inicioNum && registroNum <= finNum;
+    });
+
+    if (filtrados.length === 0) return alert("No se encontraron registros entre " + fInicio + " y " + fFin);
+
+    // Ordenar: Los más antiguos primero para que el reporte sea cronológico
+    filtrados.sort((a, b) => normalizar(a.fecha) - normalizar(b.fecha));
+
+    let txt = `📋 REPORTE ASISTENCIA - ${USER_INFO.nombre}\n`;
+    txt += `📅 Período: ${fInicio} al ${fFin}\n`;
+    txt += `------------------------------------------\n`;
+    filtrados.forEach(r => { 
+        txt += `${r.fecha} | ${r.tipo}: ${r.hora} hs | ${r.sucursal}\n`; 
+    });
+    txt += `------------------------------------------\n`;
+    txt += `Generado por RapiTac 2026`;
+
+    // MÉTODO DE COPIADO ULTRA-COMPATIBLE
+    const el = document.createElement('textarea');
+    el.value = txt;
+    document.body.appendChild(el);
+    el.select();
+    el.setSelectionRange(0, 99999);
+    try {
+        document.execCommand('copy');
+        alert("✅ Reporte copiado con éxito.");
+    } catch (err) {
+        alert("Error al copiar.");
+    }
+    document.body.removeChild(el);
+}
+    function mostrarSeccion(id) {
+    // 1. Apagamos todas las pantallas
+    ['login-screen', 'main-screen', 'seccionAdelantos', 'vacaciones-screen', 'panel-encargado', 'seccion-legajo'].forEach(s => {
+        const el = document.getElementById(s);
+        if(el) el.style.display = 'none';
+    });
+
+    // 2. Prendemos la que pediste
+    const activa = document.getElementById(id);
+    if(activa) activa.style.display = 'flex';
+    
+    // 3. ¡CONEXIÓN MÁGICA! Si entramos al Inicio o al Legajo, cargamos tus datos y foto
+    if(id === 'main-screen' || id === 'seccion-legajo') {
+        actualizarInterfazUsuario();
+    }
+
+    // 4. Actualizamos el resto de las secciones
+    if(id === 'seccionAdelantos') actualizarVistaAdelantos();
+    if(id === 'vacaciones-screen') actualizarVistaVacaciones();
+}
+
+    function solicitarVaca() {
+    const desde = document.getElementById('vaca-desde').value;
+    const hasta = document.getElementById('vaca-hasta').value;
+
+    if (!desde || !hasta) {
+        return alert("Por favor, selecciona ambas fechas.");
+    }
+
+    if (confirm(`¿Solicitar vacaciones desde el ${desde} al ${hasta}?`)) {
+        const nuevaVaca = {
+            id: Date.now(),
+            dni: USER_INFO.dni,
+            nombre: USER_INFO.nombre, // Añadimos el nombre para facilitar la gestión
+            desde: desde,
+            hasta: hasta,
+            fechaSolicitud: new Date().toLocaleString(), // Usamos toLocaleString para hora y fecha
+            estado: "Pendiente",
+            respuesta: "Esperando revisión de locales..."
+        };
+
+        // 1. Guardado local (Historial del empleado)
+        let vacas = JSON.parse(localStorage.getItem('vacaciones_rapitac')) || [];
+        vacas.unshift(nuevaVaca);
+        localStorage.setItem('vacaciones_rapitac', JSON.stringify(vacas));
+
+        // 2. ENVÍO A LA NUBE (Sincronización con Firebase)
+        if (typeof db !== 'undefined') {
+            // Guardamos en la carpeta global de vacaciones
+            db.ref('solicitudes/vacaciones/' + nuevaVaca.id).set(nuevaVaca);
+            
+            // Notificamos al CEO
+            db.ref('notificaciones_ceo').push({
+                mensaje: `🏖️ Vacaciones: ${USER_INFO.nombre} (del ${desde} al ${hasta})`,
+                fecha: nuevaVaca.fechaSolicitud,
+                leido: false
+            });
+        }
+
+        // 3. Limpieza y actualización
+        document.getElementById('vaca-desde').value = '';
+        document.getElementById('vaca-hasta').value = '';
+        
+        actualizarVistaVacaciones();
+        alert("Solicitud de vacaciones enviada y sincronizada.");
+    }
+}
+// --- MOTOR DE VACACIONES (CORREGIDO Y PRIVADO) ---
+function solicitarVaca() {
+    const desde = document.getElementById('vaca-desde').value;
+    const hasta = document.getElementById('vaca-hasta').value;
+
+    if (!desde || !hasta) {
+        return alert("Por favor, selecciona ambas fechas.");
+    }
+
+    if (confirm(`¿Solicitar vacaciones del ${desde} al ${hasta}?`)) {
+        let vacas = JSON.parse(localStorage.getItem('vacaciones_rapitac')) || [];
+        
+        const nuevaSolicitud = {
+            id: Date.now(),
+            dni: USER_INFO.dni, // <--- AHORA SÍ GUARDA EL DNI
+            desde: desde,
+            hasta: hasta,
+            fechaSolicitud: new Date().toLocaleDateString(),
+            estado: "Pendiente",
+            respuesta: "Esperando revisión de locales..."
+        };
+        
+        vacas.unshift(nuevaSolicitud);
+        localStorage.setItem('vacaciones_rapitac', JSON.stringify(vacas));
+        
+        document.getElementById('vaca-desde').value = '';
+        document.getElementById('vaca-hasta').value = '';
+        
+        actualizarVistaVacaciones();
+        alert("¡Solicitud enviada! Tu encargado la revisará pronto.");
+    }
+}
+
+function actualizarVistaVacaciones() {
+    const contenedor = document.getElementById('historialVacaciones');
+    if(!contenedor) return;
+
+    const todasLasVacas = JSON.parse(localStorage.getItem('vacaciones_rapitac')) || [];
+
+    // FILTRO DE PRIVACIDAD REFORZADO:
+    // Solo muestra si coincide el DNI (y oculta los registros viejos sin DNI)
+    const misVacas = todasLasVacas.filter(v => v.dni && v.dni === USER_INFO.dni);
+
+    if (misVacas.length === 0) {
+        contenedor.innerHTML = '<p style="color: #888; text-align: center; font-size: 13px;">No tienes solicitudes de licencia.</p>';
+        return;
+    }
+
+    contenedor.innerHTML = misVacas.map(v => `
+        <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid ${v.estado === 'Pendiente' ? '#f59e0b' : '#10b981'};">
+            <div style="display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; margin-bottom: 5px;">
+                <span>Pedido el: ${v.fechaSolicitud}</span>
+                <span style="color: ${v.estado === 'Pendiente' ? '#f59e0b' : '#10b981'}; font-weight: bold;">${v.estado.toUpperCase()}</span>
+            </div>
+            <div style="font-weight: bold; font-size: 14px; color: #fff;">
+                🗓️ ${v.desde} <span style="color:var(--accent);">→</span> ${v.hasta}
+            </div>
+            <div style="margin-top: 8px; font-size: 12px; color: #10b981; background: rgba(16,185,129,0.1); padding: 5px; border-radius: 5px;">
+                💬 Resp: ${v.respuesta}
+            </div>
+        </div>
+    `).join('');
+}
+async function compartirFalta() {
+    const fecha = document.getElementById('fecha-ausencia').value;
+    const motivo = document.getElementById('motivo-ausencia').value;
+    const comentario = document.getElementById('comentario-ausencia').value || "Sin comentarios adicionales";
+    
+    if(!fecha) { 
+        alert("⚠️ Por favor seleccioná la fecha de la inasistencia."); 
+        return; 
+    }
+
+    // --- LÓGICA DE FECHA (Igual a la anterior) ---
+    const partes = fecha.split('-'); 
+    const fechaObj = new Date(partes[0], partes[1] - 1, partes[2], 12, 0, 0);
+    const dias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+    const nombreDia = dias[fechaObj.getDay()];
+    const fechaFormateada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+
+    // Datos del usuario (MJG)
+    const nombre = USER_INFO.nombre;
+    const dni = USER_INFO.dni;
+    const sucursal = USER_INFO.sucursal || "No especificada";
+    
+    // --- CONSTRUCCIÓN DEL MENSAJE PARA EL MOTOR NATIVO ---
+    const tituloMensaje = "AVISO DE AUSENCIA - RAPITAC";
+    const cuerpoMensaje = `📌 REPORTE DE INASISTENCIA\n` +
+                          `--------------------------\n` +
+                          `👤 Empleado: ${nombre}\n` +
+                          `🆔 DNI: ${dni}\n` +
+                          `🏢 Sucursal: ${sucursal}\n\n` +
+                          `📅 Día: ${nombreDia} ${fechaFormateada}\n` +
+                          `⚠️ Motivo: ${motivo}\n` +
+                          `💬 Nota: ${comentario}\n\n` +
+                          `📸 *Se adjunta comprobante por separado.*`;
+
+    // --- ACTIVACIÓN DEL MOTOR NATIVO ---
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: tituloMensaje,
+                text: cuerpoMensaje
+                // Nota: Compartir archivos (como la foto) requiere una lógica más compleja de "Blob".
+                // Por ahora, enviamos el texto y el usuario adjunta la foto después.
+            });
+            cerrarModalAusencia();
+        } catch (error) {
+            console.log("El usuario canceló o hubo un error:", error);
+        }
+    } else {
+        // Fallback: Si el navegador es muy viejo, usamos WhatsApp Web como respaldo
+        const urlWhatsApp = `https://wa.me/?text=${encodeURIComponent(tituloMensaje + "\n\n" + cuerpoMensaje)}`;
+        window.open(urlWhatsApp, '_blank');
+    }
+}
+
+
+// --- BLOQUE UNIFICADO DE LOCALES Y GPS ---
+
+const LOCALES = [
+    { n: "Las Heras", d: "Las Heras 2046" },
+    { n: "Suipacha 779", d: "Suipacha 779" },
+    { n: "Paraguay", d: "Paraguay 4012" },
+    { n: "Suipacha 1120", d: "Suipacha 1120" },
+    { n: "Uruguay", d: "Uruguay 375" },
+    { n: "Quintana", d: "Quintana 190" },
+    { n: "Charcas", d: "Charcas 3491" },
+    { n: "Talcahuano", d: "Talcahuano 1042" },
+    { n: "Merlo", d: "Av. del Libertador 550" },
+    { n: "Morón", d: "9 de Julio 164" }
+];
+
+// --- BLOQUE CORREGIDO: MOTOR DE GPS ---
+// --- BLOQUE CORREGIDO: MOTOR DE GPS ---
+async function obtenerCoordenadas() {
+    return new Promise((resolve) => {
+        if (!navigator.geolocation) {
+            resolve("No soportado");
+            return; // Añadido para frenar la ejecución si no hay GPS
+        }
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                // URL corregida: ahora usa HTTPS y el formato estándar de Google Maps
+                resolve(`https://www.google.com/maps?q=${lat},${lon}`);
+            },
+            (error) => {
+                console.warn("Error de GPS:", error);
+                resolve("Sin permiso de GPS");
+            },
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 } // Subí el tiempo a 8s por si el celular es lento
+        );
+    });
+}
+
+function cambiarSucursal() {
+    let opciones = LOCALES.map((l, i) => `${i+1}- ${l.n}`).join("\n");
+    let eleccion = prompt("SELECCIONE SUCURSAL ACTUAL:\n" + opciones);
+    
+    if (eleccion !== null) {
+        let indice = parseInt(eleccion) - 1;
+        if (indice >= 0 && indice < LOCALES.length) {
+            USER_INFO.sucursal = LOCALES[indice].n;
+            localStorage.setItem(`ultima_sucursal_${USER_INFO.dni}`, USER_INFO.sucursal);
+            
+            // Actualizamos visualmente el header sin recargar todo
+            const welcomeDiv = document.getElementById('welcome');
+            if(welcomeDiv) {
+                validar(); // Esto refresca el cartel con el nuevo nombre
+            }
+            alert("Ubicación actualizada: " + USER_INFO.sucursal);
+        } else {
+            alert("Opción no válida.");
+        }
+    }
+}
+
+// --- BLOQUE: LEGAJO DIGITAL DINÁMICO (VERSIÓN UNIFICADA Y SEGURA) ---
+
+function mostrarLegajo() {
+    const fotoElement = document.getElementById('legajo-foto');
+    if(!fotoElement) return;
+
+    const dni = USER_INFO.dni.toString().trim();
+    
+    // Usamos el formato DNI_foto.jpg para que sea único
+    fotoElement.src = `./img/perfiles/${dni}_foto.jpg?v=${Date.now()}`;
+
+    fotoElement.onerror = function() {
+        console.log("Foto personalizada no encontrada, usando avatar.");
+        this.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${dni}`;
+        this.onerror = null; 
+    };
+
+    document.getElementById('legajo-nombre-full').innerText = USER_INFO.nombre;
+    document.getElementById('legajo-id').innerText = `DNI: ${dni}`;
+    document.getElementById('legajo-sucursal').innerText = USER_INFO.sucursal;
+    
+    mostrarSeccion('seccion-legajo');
+}
+
+// ESTA ES LA FUNCIÓN MAESTRA QUE REEMPLAZA A TODAS LAS ANTERIORES
+// Se usa para: alta, art, antecedentes
+
+
+function abrirArt() {
+    const msj = `DATOS DE ART\nAseguradora: Galeno ART\nPóliza: 12345678\nEmergencias: 0800-XXX-XXXX\n\n¿Desea llamar a emergencias ahora?`;
+    if(confirm(msj)) {
+        window.location.href = "tel:08001234567"; 
+    }
+}
+
+// --- MÓDULO UNIFICADO DE AUSENCIAS (MOTOR NATIVO) ---
+
+// 1. ABRE EL MODAL DE AUSENCIA
+function notificarAusencia() {
+    if (!USER_INFO || !USER_INFO.nombre) {
+        alert("Error: Inicie sesión para notificar.");
+        return;
+    }
+    document.getElementById('modal-ausencia').style.display = 'flex';
+    
+    // Ponemos la fecha de mañana por defecto como sugerencia
+    const mañana = new Date();
+    mañana.setDate(mañana.getDate() + 1);
+    document.getElementById('fecha-ausencia').value = mañana.toISOString().split('T')[0];
+}
+
+// 2. CIERRA EL MODAL
+function cerrarModalAusencia() {
+    document.getElementById('modal-ausencia').style.display = 'none';
+}
+
+// 3. ENVÍA EL REPORTE USANDO EL MOTOR DEL TELÉFONO
+async function enviarAusenciaFinal() {
+    const fecha = document.getElementById('fecha-ausencia').value;
+    const motivo = document.getElementById('motivo-ausencia').value;
+    const comentario = document.getElementById('comentario-ausencia').value || "Sin notas adicionales";
+    
+    if(!fecha) { 
+        alert("Por favor seleccioná una fecha."); 
+        return; 
+    }
+
+    // Formateamos la fecha a DD/MM/AAAA para que sea legible
+    const fechaFormateada = fecha.split('-').reverse().join('/');
+
+    // Construimos el cuerpo del mensaje profesional para RapiTac
+    const cuerpoMensaje = `📌 REPORTE DE INASISTENCIA\n` +
+                          `--------------------------\n` +
+                          `👤 Empleado: ${USER_INFO.nombre}\n` +
+                          `🆔 DNI: ${USER_INFO.dni}\n` +
+                          `🏢 Sucursal: ${USER_INFO.sucursal || "No asignada"}\n\n` +
+                          `📅 Fecha: ${fechaFormateada}\n` +
+                          `⚠️ Motivo: ${motivo}\n` +
+                          `💬 Nota: ${comentario}\n\n` +
+                          `📸 *Se adjunta comprobante a continuación.*`;
+
+    // ACTIVACIÓN DEL MOTOR NATIVO (Permite elegir App y adjuntar fotos)
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'Aviso de Ausencia - RapiTac',
+                text: cuerpoMensaje
+            });
+            cerrarModalAusencia();
+        } catch (error) {
+            console.log("El usuario canceló el envío.");
+        }
+    } else {
+        // Fallback para navegadores que no soportan Share API
+        const urlFallback = `https://wa.me/?text=${encodeURIComponent(cuerpoMensaje)}`;
+        window.open(urlFallback, '_blank');
+        cerrarModalAusencia();
+    }
+}
+
+function verRegistrosDelLocal() {
+    const h = JSON.parse(localStorage.getItem('logs_rt')) || [];
+    
+    // Filtramos solo los registros de la sucursal donde estoy ahora
+    const registrosLocal = h.filter(r => r.sucursal === USER_INFO.sucursal);
+
+    if(registrosLocal.length === 0) {
+        return alert("No hay registros hoy en " + USER_INFO.sucursal);
+    }
+
+    let listado = `🕒 HORARIOS EN ${USER_INFO.sucursal.toUpperCase()}\n\n`;
+    registrosLocal.slice(0, 10).forEach(r => {
+        listado += `${r.hora} hs - ${r.nombre} (${r.tipo})\n`;
+    });
+
+    alert(listado);
+}
+// FUNCIÓN PARA VISTA RÁPIDA DE FOTO
+function verCredencialFoto() {
+    const dni = USER_INFO.dni.toString().trim();
+    // Buscamos el archivo DNI_art_foto.jpg en la carpeta docs/art/
+    const url = `./docs/art/${dni}_art_foto.jpg`;
+    
+    console.log("Abriendo foto credencial:", url);
+    window.open(url, '_blank');
+}
+
+// FUNCIÓN MAESTRA PARA PDFS (La que ya pegamos antes, asegúrate que sea esta)
+function descargarDocumento(tipo) {
+    const dni = USER_INFO.dni.toString().trim();
+    const url = `./docs/${tipo}/${dni}_${tipo}.pdf`;
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${tipo.toUpperCase()}_${dni}.pdf`;
+    
+    document.body.appendChild(link);
+    
+    // Verificamos si existe antes de descargar
+    fetch(url).then(response => {
+        if (response.ok) {
+            link.click();
+        } else {
+            alert(`⚠️ El documento '${tipo.toUpperCase()}' no está cargado.\nArchivo buscado: ${dni}_${tipo}.pdf`);
+        }
+    }).catch(() => {
+        window.open(url, '_blank');
+    }).finally(() => {
+        document.body.removeChild(link);
+    });
+}
+
+function actualizarInterfazUsuario() {
+    // 1. Verificamos que tengamos los datos del usuario
+    if (!USER_INFO || !USER_INFO.dni) {
+        console.error("Error: No hay información de usuario cargada.");
+        return;
+    }
+
+    const dni = USER_INFO.dni.toString().trim();
+    const nombre = USER_INFO.nombre || "Usuario";
+    const sucursal = USER_INFO.sucursal || "No asignada";
+
+    // --- FOTO DE PERFIL (Principal y Legajo) ---
+    const fotos = document.querySelectorAll('.foto-perfil-js'); // Usaremos una clase para actualizar todas juntas
+    const rutaFoto = `./img/perfiles/${dni}_foto.jpg?v=${Date.now()}`;
+
+    fotos.forEach(img => {
+        img.src = rutaFoto;
+        img.onerror = function() {
+            // Si falla, pone el avatar de DiceBear
+            this.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${dni}`;
+            this.onerror = null;
+        };
+    });
+
+    // --- DATOS DE TEXTO ---
+    // En la pantalla principal
+    const labelNombrePrincipal = document.getElementById('user-name-main');
+    if(labelNombrePrincipal) labelNombrePrincipal.innerText = nombre;
+
+    // En el Legajo Digital
+    const legajoNombre = document.getElementById('legajo-nombre-full');
+    const legajoID = document.getElementById('legajo-id');
+    const legajoSucursal = document.getElementById('legajo-sucursal');
+
+    if(legajoNombre) legajoNombre.innerText = nombre;
+    if(legajoID) legajoID.innerText = `ID Legajo: ${dni}`;
+    if(legajoSucursal) legajoSucursal.innerText = sucursal;
+}
+
+
+function verMiCredencial() {
+    if (!USER_INFO || !USER_INFO.dni) {
+        alert("Error: No hay sesión activa.");
+        return;
+    }
+
+    // Usamos el DNI de la sesión activa
+    const dni = USER_INFO.dni;
+    const nombre = USER_INFO.nombre;
+    const sucursal = USER_INFO.sucursal || "Merlo";
+    const fotoURL = `./img/perfiles/${dni}_foto.jpg`;
+
+    // Creamos un "Modal" de credencial
+    const modalCred = document.createElement('div');
+    modalCred.id = "modal-credencial";
+    modalCred.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px;";
+    
+    modalCred.innerHTML = `
+        <div style="background: white; width:100%; max-width:350px; border-radius:20px; overflow:hidden; box-shadow:0 20px 40px rgba(0,0,0,0.5); font-family: sans-serif; position:relative;">
+            <div style="background:#1e293b; color:white; padding:20px; text-align:center;">
+                <h3 style="margin:0; letter-spacing:2px;">RAPITAC</h3>
+                <small style="opacity:0.8;">CREDENCIAL DIGITAL DE IDENTIDAD</small>
+            </div>
+            
+                 <div style="padding:20px; text-align:center; color:#333; display:flex; flex-direction:column; align-items:center;">
+                 <img src="${fotoURL}" onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${dni}'" 
+                 style="width:140px; height:140px; border-radius:15px; border:4px solid #10b981; object-fit:cover; margin: 0 auto 15px auto;">
+                
+                <h2 style="margin:0; color:#1e293b; text-transform:uppercase;">${nombre}</h2>
+                <p style="margin:5px 0; color:#10b981; font-weight:bold;">${sucursal}</p>
+                
+                <div style="margin-top:15px; border-top:1px dashed #ccc; padding-top:15px;">
+                    <small style="display:block; color:#666;">DNI / LEGAJO</small>
+                    <b style="font-size:18px; color:#1e293b;">${dni}</b>
+                </div>
+
+                <div style="margin-top:20px; opacity:0.7;">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=RAPITAC-${dni}" style="width:80px;">
+                </div>
+            </div>
+
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    style="width:100%; padding:15px; background:#f43f5e; color:white; border:none; font-weight:bold; cursor:pointer;">
+                CERRAR CREDENCIAL
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(modalCred);
+}
+function abrirRecibos() {
+    if (!USER_INFO || !USER_INFO.dni) return alert("Inicie sesión");
+
+    const dni = USER_INFO.dni.toString().trim();
+    const añoActual = new Date().getFullYear();
+
+    // Lista de conceptos
+    const conceptos = [
+        { id: "enero", n: "Enero" },
+        { id: "febrero", n: "Febrero" },
+        { id: "marzo", n: "Marzo" },
+        { id: "abril", n: "Abril" },
+        { id: "mayo", n: "Mayo" },
+        { id: "sac_1", n: "🔥 1er SAC (Aguinaldo)" },
+        { id: "junio", n: "Junio" },
+        { id: "julio", n: "Julio" },
+        { id: "agosto", n: "Agosto" },
+        { id: "septiembre", n: "Septiembre" },
+        { id: "octubre", n: "Octubre" },
+        { id: "noviembre", n: "Noviembre" },
+        { id: "sac_2", n: "🔥 2do SAC (Aguinaldo)" },
+        { id: "diciembre", n: "Diciembre" }
+    ];
+
+    // --- MODIFICACIÓN 2: FILTRO DE MESES CARGADOS ---
+    // Aquí defines qué recibos están disponibles. Por ahora solo 'enero'.
+    // Cuando subas febrero, simplemente agregas 'febrero' a la lista: ['enero', 'febrero']
+    const mesesDisponibles = ['enero']; 
+
+    const modal = document.createElement('div');
+    // --- MODIFICACIÓN 3: CENTRADO Y AJUSTE MÓVIL ---
+    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.98); z-index:3000; padding:15px; color:white; overflow-y:auto; display:flex; justify-content:center;";
+    
+    // Generamos los botones solo para los meses que están en 'mesesDisponibles'
+    let listadoHtml = conceptos
+        .filter(c => mesesDisponibles.includes(c.id)) // Solo mostramos los disponibles
+        .map(c => `
+            <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; border: 1px solid rgba(255,255,255,0.1); width: 100%; box-sizing: border-box;">
+                <div>
+                    <b style="display:block; font-size:14px; color:white;">${c.n} ${añoActual}</b>
+                    <small style="color:#10b981;">Recibo Digital Disponible</small>
+                </div>
+                <button onclick="descargarReciboUniversal('${dni}', '${c.id}', '${añoActual}')" 
+                        style="background:#3b82f6; border:none; color:white; padding:10px 18px; border-radius:8px; font-weight:bold; cursor:pointer; flex-shrink:0; margin-left:10px;">
+                    Ver
+                </button>
+            </div>
+        `).reverse().join('');
+
+    if (listadoHtml === '') {
+        listadoHtml = '<p style="text-align:center; color:#64748b; margin-top:20px;">No hay recibos disponibles para mostrar.</p>';
+    }
+
+    modal.innerHTML = `
+        <div style="width:100%; max-width:360px; margin-top: 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; padding: 0 5px;">
+                <h2 style="margin:0; color:#3b82f6; font-size:18px;">Mis Recibos de Sueldo</h2>
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                        style="background:rgba(255,255,255,0.1); border:none; color:white; width:35px; height:35px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer;">✕</button>
+            </div>
+            <div id="lista-recibos-container" style="width:100%;">${listadoHtml}</div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+// 1. Configuración de tu Nube (Firebase)
+const firebaseConfig = {
+  apiKey: "AIzaSyA7sqfQi-8YinzO1XzUgwkT1AH70OYnDP8",
+  authDomain: "rapitac-mjg.firebaseapp.com",
+  databaseURL: "https://rapitac-mjg-default-rtdb.firebaseio.com",
+  projectId: "rapitac-mjg",
+  storageBucket: "rapitac-mjg.firebasestorage.app",
+  messagingSenderId: "744159996185",
+  appId: "1:744159996185:web:13987be97cd55c79c5bd88"
+};
+
+// 2. Encendemos el motor
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// 3. Función para que el "Lapicito" guarde en la nube
+function editarEnNube(tipo, id, nombreActual) {
+    const nuevoNombre = prompt(`Editar ${tipo}:`, nombreActual);
+    
+    if (nuevoNombre && nuevoNombre.trim() !== "" && nuevoNombre !== nombreActual) {
+        // Referencia a la base de datos de Firebase
+        const ruta = db.ref(`${tipo}/${id}`);
+        
+        // Creamos el objeto de actualización
+        // Si es local usamos 'n' (nombre), si es empleado usamos 'nombre'
+        const datosActualizados = (tipo === 'locales') 
+            ? { n: nuevoNombre.trim() } 
+            : { nombre: nuevoNombre.trim() };
+
+        ruta.update(datosActualizados)
+            .then(() => {
+                alert("✅ Sincronizado con éxito. Los cambios se verán al recargar.");
+                location.reload(); // Recargamos para que impacte en las listas locales
+            })
+            .catch((error) => {
+                console.error("Error Firebase:", error);
+                alert("❌ Error al conectar con la nube. Verificá tu conexión.");
+            });
+    }
+}
+function accesoEncargado() {
+    const clave = prompt("🔐 CONTROL DE ACCESO\nIngrese clave (Mantenimiento, CEO o Desarrollador):");
+
+    if (clave === null) return; // Si cancela, no hace nada
+
+    // 1. LIMPIEZA RÁPIDA (999)
+    if (clave === "999") {
+        if (confirm("⚠️ ¿Desea realizar mantenimiento de limpieza de registros en todos los locales?")) {
+            localStorage.removeItem('logs_rt');
+            alert("✅ Registros de locales limpiados.");
+            
+            // --- AGREGADO PARA QUE FUNCIONE EN EL MOMENTO ---
+            if (typeof render === 'function') render(); // Limpia la lista en pantalla
+            toggleMenu(); // Cierra el slider/menú lateral automáticamente
+        }
+    } 
+    // 2. ACCESO A GESTIÓN (CEO o DESARROLLADOR)
+    else if (clave === "2026" || clave === "300913") {
+        mostrarSeccion('panel-encargado');
+        verSeccionMaestra('empleados');
+        toggleMenu(); // También cerramos el menú al entrar al panel
+    } 
+    else {
+        alert("❌ Clave incorrecta.");
+    }
+}
+// --- FUNCIÓN PARA ABRIR O DESCARGAR EL PDF ---
+function descargarReciboUniversal(dni, mes, año) {
+    // Construimos el nombre exacto que busca la app
+    const nombreArchivo = `${dni}_${mes}_${año}.pdf`;
+    const ruta = `./docs/recibos/${nombreArchivo}`;
+    
+    // Intentamos abrirlo
+    const win = window.open(ruta, '_blank');
+    
+    // Si la ventana no abre o da error, avisamos qué nombre falta
+    if (!win || win.closed || typeof win.closed == 'undefined') {
+        alert("⚠️ El archivo no se pudo abrir.\n\nVerificá que en la carpeta 'docs/recibos/' exista el archivo:\n" + nombreArchivo);
+    }
+}
+
+
+window.onload = function() {
+    const status = document.getElementById('status-text');
+    const splash = document.getElementById('splash-screen');
+    
+    const mensajes = [
+        " Buscando base de datos...",
+        " Verificando protocolos de seguridad...",
+        " Sincronizando con servidor...",
+        " Conexión establecida."
+    ];
+    
+    let i = 0;
+    const intervalo = setInterval(() => {
+        if(i < mensajes.length) {
+            status.innerText = mensajes[i];
+            i++;
+        } else {
+            clearInterval(intervalo);
+            // Desvanecer splash screen
+            splash.style.opacity = '0';
+            setTimeout(() => {
+                splash.style.display = 'none';
+            }, 500);
+        }
+    }, 700); // Cambia cada 0.7 segundos para que sea ágil
+};
+
+// --- GESTIÓN MAESTRA Y MANTENIMIENTO (INDEX 68) ---
+
+function verSeccionMaestra(tipo) {
+    const contenedor = document.getElementById('contenido-maestro');
+    if(!contenedor) return;
+    contenedor.innerHTML = ""; 
+
+    if (tipo === 'solicitudes') {
+        actualizarPanelGestion(); 
+    } 
+    else if (tipo === 'empleados') {
+        let html = '<h3 style="color:white; font-size:14px; margin-bottom:15px;">👤 Gestión de Personal</h3>';
+        EMPLEADOS.forEach((emp) => {
+            html += `
+            <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:12px; margin-bottom:10px; border: 1px solid rgba(255,255,255,0.1);">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-weight:bold; color:white;">${emp.nombre}</div>
+                        <div style="font-size:11px; color:#64748b;">DNI: ${emp.dni} | Clave: ${emp.clave}</div>
+                    </div>
+                    <button onclick="editarEnNube('empleados', '${emp.dni}', '${emp.nombre}')" style="background:#1e293b; border:1px solid #3b82f6; color:#3b82f6; border-radius:8px; padding:8px; cursor:pointer;">✏️</button>
+                </div>
+            </div>`;
+        });
+        contenedor.innerHTML = html;
+    }
+    else if (tipo === 'locales') {
+        let html = '<h3 style="color:white; font-size:14px; margin-bottom:15px;">📍 Sucursales</h3>';
+        LOCALES.forEach((loc, index) => {
+            html += `
+            <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:12px; margin-bottom:10px; border: 1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div style="font-weight:bold; color:#3b82f6; margin-bottom:5px;">${loc.n}</div>
+                    <div style="font-size:12px; color:#94a3b8;">${loc.d}</div>
+                </div>
+                <button onclick="editarEnNube('locales', '${index}', '${loc.n}')" style="background:#1e293b; border:1px solid #10b981; color:#10b981; border-radius:8px; padding:8px; cursor:pointer;">✏️</button>
+            </div>`;
+        });
+        contenedor.innerHTML = html;
+    }
+    else if (tipo === 'excel') {
+        contenedor.innerHTML = `
+            <div style="padding:20px; text-align:center; animation: fadeIn 0.3s;">
+                <div style="font-size:40px; margin-bottom:10px;">📊</div>
+                <h3 style="color:white; font-size:16px;">Reportes de Exportación</h3>
+                <p style="color:#94a3b8; font-size:12px; margin-bottom:20px;">Generar archivo compatible con Excel del historial de Huella Segura.</p>
+                <button onclick="if(confirm('¿Generar reporte Excel?')) exportarExcel()" style="background:#10b981; color:white; border:none; padding:12px 20px; border-radius:10px; font-weight:bold; cursor:pointer; width:100%;">DESCARGAR EXCEL (.CSV)</button>
+            </div>`;
+    }
+    else if (tipo === 'mapa') {
+        contenedor.innerHTML = `
+            <div style="padding:20px; text-align:center; animation: fadeIn 0.3s;">
+                <div style="font-size:40px; margin-bottom:10px;">🔥</div>
+                <h3 style="color:white; font-size:16px;">Mapa de Densidad</h3>
+                <p style="color:#94a3b8; font-size:12px; margin-bottom:20px;">Visualización de zonas calientes de registros activos.</p>
+                <button onclick="alert('Cargando mapa de calor de Huella Segura (mjg)...')" style="background:#f97316; color:white; border:none; padding:12px 20px; border-radius:10px; font-weight:bold; cursor:pointer; width:100%;">VER MAPA DE CALOR</button>
+            </div>`;
+    }
+}
+
+// --- FUNCIÓN DE EDICIÓN UNIFICADA (NUBE / LOCAL) ---
+function editarEnNube(categoria, id, nombreActual) {
+    if (categoria === 'empleados') {
+        const nuevoNombre = prompt("Editar Nombre del Empleado:", nombreActual);
+        if (nuevoNombre && confirm(`¿Desea cambiar el nombre de "${nombreActual}" a "${nuevoNombre}"?`)) {
+            const emp = EMPLEADOS.find(e => e.dni === id);
+            if (emp) {
+                emp.nombre = nuevoNombre;
+                alert("✅ Nombre de empleado actualizado localmente.");
+                verSeccionMaestra('empleados');
+            }
+        }
+    } 
+    else if (categoria === 'locales') {
+        const index = parseInt(id);
+        const nuevoNombre = prompt("Nombre del Local:", LOCALES[index].n);
+        const nuevaDir = prompt("Dirección:", LOCALES[index].d);
+        
+        if (nuevoNombre && nuevaDir && confirm("¿Confirmar cambios en la sucursal?")) {
+            LOCALES[index].n = nuevoNombre;
+            LOCALES[index].d = nuevaDir;
+            alert("✅ Sucursal actualizada localmente.");
+            verSeccionMaestra('locales');
+        }
+    }
+}
+
+// --- REGISTRO DE SERVICE WORKER ---
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('SW registrado con éxito', reg))
+            .catch(err => console.warn('Error al registrar SW', err));
+    });
+}
+</script>
+</body>
+</html>

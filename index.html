@@ -1448,15 +1448,16 @@ function actualizarInterfazUsuario() {
 
     const dni = USER_INFO.dni.toString().trim();
     
-    // --- REFUERZO PARA INDEX 76 ---
-    // Verificamos que EMPLEADOS exista antes de buscar, para evitar errores en la consola
+    // --- REFUERZO INDEX 79: Sincronización con Nube ---
     const datosFrescos = (typeof EMPLEADOS !== 'undefined') ? EMPLEADOS.find(e => e.dni.toString() === dni) : null;
     
-    // Si encontramos al empleado en la lista global, usamos ese nombre (el de la nube).
-    // Si no, usamos el que está en la sesión (el del teléfono).
+    // Si hay datos nuevos en la nube, actualizamos la variable USER_INFO para que no use la vieja
+    if (datosFrescos) {
+        USER_INFO.nombre = datosFrescos.nombre;
+        USER_INFO.sucursal = datosFrescos.sucursal;
+    }
+
     const nombre = datosFrescos ? datosFrescos.nombre : (USER_INFO.nombre || "Usuario");
-    
-    // Hacemos lo mismo con la sucursal para que si cambia el nombre del local, también se vea
     const sucursal = datosFrescos ? (datosFrescos.sucursal || USER_INFO.sucursal) : (USER_INFO.sucursal || "No asignada");
 
     // --- FOTO DE PERFIL (Principal y Legajo) ---
@@ -1611,34 +1612,40 @@ const firebaseConfig = {
   appId: "1:744159996185:web:13987be97cd55c79c5bd88"
 };
 
-// --- SINCRONIZACIÓN REFORZADA (Index 78) ---
+// --- 2. CONEXIÓN AL MOTOR (Las líneas que faltaban) ---
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database(); 
+
+// --- 3. SINCRONIZACIÓN MAESTRA (Index 79) ---
 db.ref('empleados').on('value', (snapshot) => {
     const data = snapshot.val();
     if (data) {
-        // 1. Convertimos los datos de la nube
+        // Convertimos los datos de la nube
         const listaNueva = Object.values(data);
         
-        // 2. Actualizamos la lista local EMPLEADOS
+        // Actualizamos la lista local EMPLEADOS
         EMPLEADOS.length = 0;
         listaNueva.forEach(emp => EMPLEADOS.push(emp));
-        console.log("✅ Lista sincronizada. Datos frescos de la nube recibidos.");
+        console.log("✅ Conexión exitosa. Datos frescos de la nube recibidos.");
 
-        // 3. ¡ESTO ES LO NUEVO! Actualizamos la sesión activa
+        // Actualizamos la sesión activa para que el nombre cambie en tiempo real
         if (USER_INFO && USER_INFO.dni) {
-            const yoActualizado = listaNueva.find(e => e.dni.toString() === USER_INFO.dni.toString());
+            const dniActual = USER_INFO.dni.toString();
+            const yoActualizado = listaNueva.find(e => e.dni.toString() === dniActual);
             if (yoActualizado) {
-                // Actualizamos la "mochila" con el nombre nuevo de la nube
                 USER_INFO.nombre = yoActualizado.nombre;
                 USER_INFO.sucursal = yoActualizado.sucursal;
                 localStorage.setItem('user_session_rt', JSON.stringify(USER_INFO));
             }
         }
 
-        // 4. Refrescamos la pantalla
+        // Refrescamos la pantalla (Fotos, Nombres, Legajo)
         if (typeof actualizarInterfazUsuario === 'function') {
             actualizarInterfazUsuario();
         }
     }
+}, (error) => {
+    console.error("❌ Error de Firebase:", error);
 });
 
 function accesoEncargado() {

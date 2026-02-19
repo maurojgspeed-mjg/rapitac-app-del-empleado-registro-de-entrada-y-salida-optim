@@ -285,176 +285,100 @@
 </div>
 
 <body>
+<body>
+
 <div id="splash-screen">
     <div style="text-align: center;">
         <h1 style="color: #3b82f6; margin-bottom: 5px; letter-spacing: 2px;">RAPITAC</h1>
         <p style="font-size: 10px; color: #64748b; margin-top: 0;">SISTEMA DE GESTIÓN PROFESIONAL</p>
-        
         <div class="loader"></div>
         <div id="status-text" class="loading-text">Iniciando sistema...</div>
     </div>
-    
     <div style="position: absolute; bottom: 30px; font-size: 12px; color: #475569; font-weight: bold;">
         POWERED BY MJG
     </div>
 </div>
 
 <div id="app">
+    
     <div id="login-screen" class="screen">
-    <h1 style="color: var(--accent); text-align: center; margin-bottom: 5px;">RapiTac</h1>
-    
-    <p style="text-align: center; color: #64748b; font-size: 13px; margin: 0 0 30px 0; font-weight: 500; letter-spacing: 0.5px;">
-        Portal del Empleado / Control de Acceso
-    </p>
-
-    <input type="number" id="dni" class="glass-input" placeholder="DNI">
-    <input type="number" pattern="\d*" inputmode="numeric" id="pass" class="glass-input" placeholder="Clave">
-    <button class="btn-main" onclick="validar()">ACCEDER</button>
-    
-    <p style="text-align: center; color: #334155; font-size: 14px; font-weight: bold; letter-spacing: 1px;">Powered by mjg</p>
-</div>
-
-    <div id="vacaciones-screen" class="screen" style="display:none; background:var(--bg-grad);">
-    <div class="header" style="padding:0; margin-bottom:15px; display: flex; flex-direction: column; align-items: flex-start;">
-        <span style="font-weight: bold; font-size: 18px; color: white;">🏖️ Mis Vacaciones</span>
-    </div>
-
-    <button onclick="mostrarSeccion('main-screen')" style="background: none; color: #10b981; border: 1px solid #10b981; padding: 5px 10px; border-radius: 10px; cursor: pointer; margin-bottom: 20px; width: fit-content;">← Volver al Inicio</button>
-    
-    <div style="background: var(--glass); padding: 20px; border-radius: 20px; border: 1px solid var(--entrada); text-align: center; margin-bottom: 25px;">
-    <h2 style="margin:0; color:var(--entrada);">Días Disponibles</h2>
-    <div id="dias-restantes" style="font-size: 48px; font-weight: bold; margin: 10px 0;">
-        ${USER_INFO.vacaciones_disponibles || 0}
-    </div>
-    <p style="opacity: 0.7; font-size: 13px;">Días cargados en el sistema</p>
-</div>
-
-    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 25px;">
-        <h3 style="font-size: 14px; margin-top: 0; color: var(--accent);">NUEVA SOLICITUD</h3>
-        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-            <div style="flex:1;">
-                <label style="font-size: 11px; opacity: 0.7;">Desde:</label>
-                <input type="date" id="vaca-desde" class="glass-input" style="padding: 10px; font-size: 13px;">
-            </div>
-            <div style="flex:1;">
-                <label style="font-size: 11px; opacity: 0.7;">Hasta:</label>
-                <input type="date" id="vaca-hasta" class="glass-input" style="padding: 10px; font-size: 13px;">
-            </div>
-        </div>
-        <button class="btn-main" style="background: var(--entrada); padding: 12px;" onclick="solicitarVaca()">ENVIAR A REVISIÓN</button>
-        
-        <h3 style="font-size: 15px; margin-top: 25px; opacity: 0.8;">Estado de Licencias</h3>
-        <div id="historialVacaciones" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; border: 1px solid #10b981;">
-            <p style="color: #888; text-align: center;">Tus solicitudes aparecerán aquí</p>
-        </div>
-    </div>
-</div>
-    <div id="main-screen" class="screen" style="display:none;">
-    <div class="header">
-        <div id="welcome" style="flex-grow: 1;"></div>
-        <div class="menu-btn" onclick="toggleMenu()">☰</div>
-    </div>
-
-    <div style="padding: 10px 0;">
-        <h2 style="color: #64748b; font-size: 13px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">
+        <h1 style="color: var(--accent); text-align: center; margin-bottom: 5px;">RapiTac</h1>
+        <p style="text-align: center; color: #64748b; font-size: 13px; margin: 0 0 30px 0; font-weight: 500; letter-spacing: 0.5px;">
             Portal del Empleado / Control de Acceso
-        </h2>
-        <div class="titulo-rayita"></div> </div>
-
-    <div class="flex-buttons">
-        <button class="btn-entrada" onclick="confirmar('ENTRADA')">📥 ENTRADA</button>
-        <button class="btn-salida" onclick="confirmar('SALIDA')">📤 SALIDA</button>
+        </p>
+        <input type="number" id="dni" class="glass-input" placeholder="DNI">
+        <input type="number" pattern="\d*" inputmode="numeric" id="pass" class="glass-input" placeholder="Clave">
+        <button class="btn-main" onclick="validar()">ACCEDER</button>
+        <p style="text-align: center; color: #334155; font-size: 14px; font-weight: bold; letter-spacing: 1px;">Powered by mjg</p>
     </div>
 
-    <div id="list">
+    <div id="main-screen" class="screen" style="display:none;">
+        <div class="header">
+            <div id="welcome" style="flex-grow: 1;"></div>
+            <div class="menu-btn" onclick="toggleMenu()">☰</div>
+        </div>
+        <div style="padding: 10px 0;">
+            <h2 style="color: #64748b; font-size: 13px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">
+                Portal del Empleado / Control de Acceso
+            </h2>
+            <div class="titulo-rayita"></div> 
+        </div>
+        <div class="flex-buttons">
+            <button class="btn-entrada" onclick="confirmar('ENTRADA')">📥 ENTRADA</button>
+            <button class="btn-salida" onclick="confirmar('SALIDA')">📤 SALIDA</button>
+        </div>
+        <div id="list"></div>
+        <button class="btn-copy-list" onclick="copiar()">📋 COPIAR REGISTROS PROFESIONAL</button>
+    </div>
+
+    <div id="vacaciones-screen" class="screen" style="display:none; background:var(--bg-grad); padding:20px;">
+        <div class="header" style="padding:0; margin-bottom:15px; display: flex; flex-direction: column; align-items: flex-start;">
+            <span style="font-weight: bold; font-size: 18px; color: white;">🏖️ Mis Vacaciones</span>
+        </div>
+        <button onclick="mostrarSeccion('main-screen')" style="background: none; color: #10b981; border: 1px solid #10b981; padding: 5px 10px; border-radius: 10px; cursor: pointer; margin-bottom: 20px; width: fit-content;">← Volver al Inicio</button>
+        
+        <div style="background: var(--glass); padding: 20px; border-radius: 20px; border: 1px solid var(--entrada); text-align: center; margin-bottom: 25px;">
+            <h2 style="margin:0; color:var(--entrada);">Días Disponibles</h2>
+            <div id="vaca-dias-disponibles" style="font-size: 48px; font-weight: bold; margin: 10px 0; color: white;">0</div>
+            <p style="opacity: 0.7; font-size: 13px;">Días cargados en el sistema</p>
         </div>
 
-    <button class="btn-copy-list" onclick="copiar()">
-        📋 COPIAR REGISTROS PROFESIONAL
-    </button>
-</div>
+        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 25px;">
+            <h3 style="font-size: 14px; margin-top: 0; color: var(--accent);">NUEVA SOLICITUD</h3>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <div style="flex:1;">
+                    <label style="font-size: 11px; opacity: 0.7; color: white;">Desde:</label>
+                    <input type="date" id="vaca-desde" class="glass-input" style="padding: 10px; font-size: 13px;">
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size: 11px; opacity: 0.7; color: white;">Hasta:</label>
+                    <input type="date" id="vaca-hasta" class="glass-input" style="padding: 10px; font-size: 13px;">
+                </div>
+            </div>
+            <button class="btn-main" style="background: var(--entrada); padding: 12px;" onclick="enviarSolicitudVaca()">ENVIAR A REVISIÓN</button>
+        </div>
 
-    
+        <h3 style="color:white; font-size:16px; margin-bottom:15px;">Historial de Solicitudes</h3>
+        <div id="historialVacaciones" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; border: 1px solid #10b981;">
+            <p style="text-align:center; color:#64748b; font-size:13px;">Cargando historial...</p>
+        </div>
+    </div>
 
-    <div id="seccionAdelantos" class="screen" style="display:none; background: var(--bg-grad);">
+    <div id="seccionAdelantos" class="screen" style="display:none; background: var(--bg-grad); padding: 20px;">
         <h3 style="color: #fff; margin-bottom: 10px;">Solicitar Adelanto</h3>
         <button onclick="mostrarSeccion('main-screen')" style="background: none; color: #FFD700; border: 1px solid #FFD700; padding: 5px 10px; border-radius: 10px; cursor: pointer; margin-bottom: 15px; width: fit-content;">← Volver al Inicio</button>
-        
         <div style="background: var(--glass); padding: 20px; border-radius: 20px; border: 1px solid #eab308; text-align: center; margin-bottom: 20px;">
             <h2 style="margin:0; color:#eab308;">Monto Máximo</h2>
             <div style="font-size: 32px; font-weight: bold; margin: 10px 0;">$ 50.000</div>
             <p style="opacity: 0.7; font-size: 12px;">Sujeto a aprobación del encargado</p>
         </div>
-
         <input type="number" id="montoSolicitado" class="glass-input" placeholder="¿Cuánto dinero necesitas?" style="border-color: #eab308;">
         <textarea id="motivoAdelanto" class="glass-input" placeholder="Motivo (opcional)" style="height: 80px; border-color: #eab308;"></textarea>
-        
         <button onclick="enviarSolicitudAdelanto()" style="background: #FFD700; color: #000; font-weight: bold; width: 100%; padding: 15px; border-radius: 12px; border: none; cursor: pointer;">ENVIAR SOLICITUD</button>
-
-        <h3 style="font-size: 15px; margin-top: 25px; opacity: 0.8;">Historial de Respuestas</h3>
-        <div id="historialAdelantos" style="flex-grow:1; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; border: 1px solid #444;">
-            <p style="color: #888; text-align: center;">Tus respuestas aparecerán aquí</p>
-        </div>
+        <div id="historialAdelantos" style="margin-top:20px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px;"></div>
     </div>
 
-    <div id="drawer">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-        <span style="font-weight: bold; color: var(--accent); letter-spacing: 1px;">MENÚ RapiTac</span>
-        <button onclick="toggleMenu()" class="menu-btn" style="width: 35px; height: 35px;">✕</button>
-    </div>
-
-    <div class="drawer-header">Gestión Personal</div>
-
-    <div class="drawer-item" onclick="mostrarSeccion('seccion-legajo'); toggleMenu();">
-        <span>👤</span> Mi Legajo Digital
-    </div>
-
-    <div class="drawer-item" onclick="mostrarSeccion('vacaciones-screen'); toggleMenu();">
-        <span>🏖️</span> Mis Vacaciones
-    </div>
-
-    <div class="drawer-item" onclick="mostrarSeccion('seccionAdelantos'); toggleMenu();">
-        <span>💰</span> Solicitar Adelanto
-    </div>
-
-    <div class="drawer-header">Administración</div>
-
-    <div class="drawer-item" onclick="accesoEncargado()" style="border-color: rgba(239, 68, 68, 0.2);">
-        <span>⚙️</span> Panel de Seguridad
-    </div>
-
-    <div style="margin-top: auto; padding-top: 40px;">
-        <div class="drawer-item" onclick="location.reload()" style="background: none; border: none; color: #f43f5e; justify-content: center;">
-            🚪 Cerrar Sesión
-        </div>
-        <p style="text-align: center; font-size: 10px; color: #475569; letter-spacing: 1px;">v2.1 Pro • MJG</p>
-    </div>
-</div>
-
-<div id="panel-encargado" class="screen" style="display:none; background: #0f172a; padding: 20px;">
-    <div class="header" style="margin-bottom: 20px;">
-        <button class="menu-btn" onclick="mostrarSeccion('main-screen')">←</button>
-        <span id="titulo-panel" style="font-weight: bold; color: #3b82f6;">Panel de Control</span>
-        <div></div>
-    </div>
-
-    <div id="controles-maestros" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 20px;">
-    <button onclick="verSeccionMaestra('solicitudes')" style="background: #1e293b; color: white; border: 1px solid #3b82f6; padding: 10px 2px; border-radius: 8px; font-size: 9px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-        <span style="font-size: 16px;">📥</span> SOLIC.
-    </button>
-    <button onclick="verSeccionMaestra('empleados')" style="background: #1e293b; color: white; border: 1px solid #3b82f6; padding: 10px 2px; border-radius: 8px; font-size: 9px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-        <span style="font-size: 16px;">👥</span> STAFF
-    </button>
-    <button onclick="verSeccionMaestra('locales')" style="background: #1e293b; color: white; border: 1px solid #3b82f6; padding: 10px 2px; border-radius: 8px; font-size: 9px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-        <span style="font-size: 16px;">📍</span> SEDES
-    </button>   
-</div>
-
-    <div id="contenido-maestro" style="flex-grow: 1; overflow-y: auto;">
-        </div>
-</div>
-
-<div id="seccion-legajo" class="screen" style="display:none; background: #0f172a; padding: 0;">
+    <div id="seccion-legajo" class="screen" style="display:none; background: #0f172a; padding: 0;">
     <div style="padding: 15px 20px 5px 20px; text-align: left;">
         <button onclick="mostrarSeccion('main-screen')" 
                 style="background: none; color: #10b981; border: 1px solid #10b981; padding: 5px 12px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: bold;">
@@ -470,13 +394,10 @@
 
     <div style="flex-grow: 1; overflow-y: auto; padding: 10px;">
         <div class="card-legajo" style="text-align: center; background: linear-gradient(180deg, rgba(59, 130, 246, 0.1) 0%, rgba(15, 23, 42, 0.5) 100%);">
-            <img id="legajo-foto" 
-     class="foto-perfil-js" 
-     src="./img/perfiles/27743971_foto.jpg" 
-     onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=27743971'" 
-     alt="Perfil" 
-     style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--accent); object-fit: cover; margin-bottom: 15px;">
-            <h2 id="legajo-nombre-full" style="margin: 0; font-size: 24px;">-</h2>
+            <img class="foto-perfil-js" src="" 
+                 onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=mjg'" 
+                 style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--accent); object-fit: cover; margin-bottom: 15px;">
+            <h2 id="legajo-nombre-full" style="margin: 0; font-size: 24px; color: white;">-</h2>
             <p id="legajo-id" style="color: var(--accent); font-weight: bold; margin: 5px 0;">ID: -</p>
         </div>
 
@@ -484,52 +405,92 @@
         <div class="card-legajo">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div>
-                    <div class="dato-label">Sucursal</div>
-                    <div id="legajo-sucursal" class="dato-valor">-</div>
+                    <div class="dato-label" style="font-size: 11px; color: #64748b; text-transform: uppercase;">Sucursal</div>
+                    <div id="legajo-sucursal" class="dato-valor" style="color: white; font-weight: bold; font-size: 14px;">-</div>
                 </div>
                 <div>
-                    <div class="dato-label">Estado</div>
-                    <div class="dato-valor" style="color: var(--entrada);">● Activo</div>
+                    <div class="dato-label" style="font-size: 11px; color: #64748b; text-transform: uppercase;">Estado</div>
+                    <div class="dato-valor" style="color: #10b981; font-weight: bold; font-size: 14px;">● Activo</div>
                 </div>
             </div>
         </div>
 
         <div class="drawer-header">Documentación & ART</div>
 
-<div class="drawer-item" onclick="abrirRecibos()" style="border-left: 4px solid #10b981; cursor:pointer; margin-bottom: 20px; background: rgba(16, 185, 129, 0.1);">
-    <span style="margin-right: 10px;">📄</span>
-    <div style="display: flex; flex-direction: column;">
-        <b style="font-size: 14px;">Mis Recibos de Sueldo</b>
-        <small style="font-size: 10px; opacity: 0.7;">Consultar y descargar</small>
+        <div class="drawer-item" onclick="abrirRecibos()" style="border-left: 4px solid #10b981; cursor:pointer; margin-bottom: 10px; background: rgba(16, 185, 129, 0.1);">
+            <span style="margin-right: 15px;">📄</span>
+            <div style="display: flex; flex-direction: column;">
+                <b style="font-size: 14px;">Mis Recibos de Sueldo</b>
+                <small style="font-size: 10px; opacity: 0.7;">Consultar y descargar</small>
+            </div>
+        </div>       
+
+        <div class="drawer-item" onclick="descargarDocumento('alta')" style="cursor:pointer;">
+            <span style="margin-right: 10px;">📜</span> Mi Alta Temprana (PDF)
+        </div>
+
+        <div class="drawer-item" onclick="descargarDocumento('antecedentes')" style="cursor:pointer;">
+            <span style="margin-right: 10px;">⚖️</span> Antecedentes Penales (PDF)
+        </div>
+
+        <div class="drawer-item" onclick="descargarDocumento('art')" style="cursor:pointer;">
+            <span style="margin-right: 10px;">🆔</span> Mi Credencial ART (PDF)
+        </div>
+
+        <div class="drawer-item" onclick="descargarDocumento('poliza')" style="cursor:pointer;">
+            <span style="margin-right: 10px;">🛡️</span> Póliza de Cobertura (PDF)
+        </div>
+
+        <div class="drawer-header">Comunicaciones</div>
+        <button class="btn-main" onclick="notificarAusencia()" style="background: #25d366; margin-top: 10px; border-radius: 16px; width: 100%; border: none; padding: 12px; color: white; font-weight: bold; cursor:pointer;">
+            📲 NOTIFICAR AUSENCIA (WhatsApp)
+        </button>
     </div>
-</div>       
-
-<div class="drawer-item" onclick="descargarDocumento('alta')" style="cursor:pointer;">
-    <i class="fas fa-file-contract" style="margin-right: 10px; color: #a5b4fc;"></i>
-    <span>Mi Alta Temprana (PDF)</span>
 </div>
 
-<div class="drawer-item" onclick="descargarDocumento('antecedentes')" style="cursor:pointer;">
-    <i class="fas fa-file-shield" style="margin-right: 10px; color: #a5b4fc;"></i>
-    <span>Antecedentes Penales (PDF)</span>
+    <div id="panel-encargado" class="screen" style="display:none; background: #0f172a; padding: 20px;">
+        <button class="menu-btn" onclick="mostrarSeccion('main-screen')">←</button>
+        <div id="controles-maestros" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 20px;">
+            <button onclick="verSeccionMaestra('solicitudes')">SOLIC.</button>
+            <button onclick="verSeccionMaestra('empleados')">STAFF</button>
+            <button onclick="verSeccionMaestra('locales')">SEDES</button>
+        </div>
+        <div id="contenido-maestro"></div>
+    </div>
+
+<div id="drawer">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 20px;">
+        <span style="font-weight: bold; color: var(--accent); letter-spacing: 1px;">MENÚ RapiTac</span>
+        <button onclick="toggleMenu()" class="menu-btn" style="width: 35px; height: 35px; background: none; border: 1px solid var(--accent); color: white; border-radius: 50%;">✕</button>
+    </div>
+
+    <div class="drawer-header" style="padding-left: 20px; opacity: 0.5; font-size: 11px; text-transform: uppercase; margin-bottom: 10px;">Gestión Personal</div>
+
+    <div class="drawer-item" onclick="mostrarSeccion('seccion-legajo'); toggleMenu();">
+        <span>👤</span> Mi Legajo Digital
+    </div>
+
+    <div class="drawer-item" onclick="mostrarSeccion('vacaciones-screen'); toggleMenu();">
+        <span>🏖️</span> Mis Vacaciones
+    </div>
+
+    <div class="drawer-item" onclick="mostrarSeccion('seccionAdelantos'); toggleMenu();">
+        <span>💰</span> Solicitar Adelanto
+    </div>
+
+    <div class="drawer-header" style="padding-left: 20px; opacity: 0.5; font-size: 11px; text-transform: uppercase; margin-top: 20px; margin-bottom: 10px;">Administración</div>
+
+    <div class="drawer-item" onclick="accesoEncargado()" style="border-left: 4px solid #f43f5e;">
+        <span>⚙️</span> Panel de Seguridad
+    </div>
+
+    <div style="margin-top: auto; padding: 20px;">
+        <div class="drawer-item" onclick="location.reload()" style="background: rgba(244, 63, 94, 0.1); border: 1px solid #f43f5e; color: #f43f5e; justify-content: center; border-radius: 12px;">
+            🚪 Cerrar Sesión
+        </div>
+        <p style="text-align: center; font-size: 10px; color: #475569; letter-spacing: 1px; margin-top: 15px;">v2.1 Pro • MJG</p>
+    </div>
 </div>
-
-<div class="drawer-item" onclick="descargarDocumento('art')" style="cursor:pointer;">
-    <i class="fas fa-id-card" style="margin-right: 10px; color: #a5b4fc;"></i>
-    <span>Mi Credencial ART (PDF)</span>
-</div>
-
-<div class="drawer-item" onclick="descargarDocumento('poliza')" style="cursor:pointer;">
-    <i class="fas fa-shield-alt" style="margin-right: 10px; color: #a5b4fc;"></i>
-    <span>Póliza de Cobertura (PDF)</span>
-</div>
-
-<div class="drawer-header">Comunicaciones</div>
-<button class="btn-main" onclick="notificarAusencia()" style="background: #25d366; margin-top: 10px; border-radius: 16px; width: 100%; border: none; padding: 12px; color: white; font-weight: bold; cursor:pointer;">
-    📲 NOTIFICAR AUSENCIA (WhatsApp)
-</button>
-
-
 <script>
     // --- BASE DE DATOS DE EMPLEADOS ---
 const EMPLEADOS = [
@@ -703,7 +664,6 @@ function cambiarSucursal() {
     }
 }
 
-    
 async function confirmar(tipo) {
     // 1. Pedir confirmación al usuario
     if(!confirm(`¿Registrar tu ${tipo} ahora?`)) return;
@@ -712,11 +672,12 @@ async function confirmar(tipo) {
     const btnEntrada = document.querySelector('.btn-entrada');
     const btnSalida = document.querySelector('.btn-salida');
     
-    btnEntrada.disabled = true;
-    btnSalida.disabled = true;
-    
-    if(tipo === 'ENTRADA') btnEntrada.innerHTML = "⌛ Localizando...";
-    else btnSalida.innerHTML = "⌛ Localizando...";
+    if(btnEntrada && btnSalida) {
+        btnEntrada.disabled = true;
+        btnSalida.disabled = true;
+        if(tipo === 'ENTRADA') btnEntrada.innerHTML = "⌛ Localizando...";
+        else btnSalida.innerHTML = "⌛ Localizando...";
+    }
 
     // 3. Capturar el GPS (Se mantiene intacto como pediste)
     const mapaUrl = await obtenerCoordenadas();
@@ -738,24 +699,28 @@ async function confirmar(tipo) {
         mapa: mapaUrl 
     };
 
-    // --- NUEVA CONEXIÓN A FIREBASE (Para que el CEO lo vea) ---
-    // Agregamos el registro a la carpeta 'asistencia' en la nube
-    push(ref(db, 'asistencia'), log);
+    // --- NUEVA CONEXIÓN A FIREBASE (CORREGIDA PARA TU VERSIÓN) ---
+    if (typeof db !== 'undefined') {
+        // Usamos la carpeta 'asistencias_globales' para que el CEO las reciba todas
+        db.ref('asistencias_globales').push(log);
+    }
     
-    // 5. Guardar en la base de datos local (Mantenemos el historial local)
+    // 5. Guardar en la base de datos local (Historial del teléfono)
     let h = JSON.parse(localStorage.getItem('logs_rt')) || [];
     h.unshift(log);
-    localStorage.setItem('logs_rt', JSON.stringify(h));
+    localStorage.setItem('logs_rt', JSON.stringify(h.slice(0, 100))); // Limitamos a 100 para no pesar tanto
     
     // 6. Restaurar botones y refrescar pantalla
-    btnEntrada.disabled = false;
-    btnSalida.disabled = false;
-    btnEntrada.innerHTML = '📥 ENTRADA';
-    btnSalida.innerHTML = '📤 SALIDA';
+    if(btnEntrada && btnSalida) {
+        btnEntrada.disabled = false;
+        btnSalida.disabled = false;
+        btnEntrada.innerHTML = '📥 ENTRADA';
+        btnSalida.innerHTML = '📤 SALIDA';
+    }
 
-    render(); 
+    if(typeof render === 'function') render(); 
     alert(`✅ ${tipo} registrada correctamente.`);
-}
+}    
 
  // --- BLOQUE CORREGIDO: LISTADO DE REGISTROS ---
 // --- MOTOR DE RENDERIZADO CON DÍA DE LA SEMANA E INFINITE SCROLL ---
@@ -1145,10 +1110,11 @@ function actualizarVistaVacaciones() {
     }
 }
 
-// Función auxiliar para mostrar las tarjetas de vacaciones
 function renderizarVacas(lista) {
     const contenedor = document.getElementById('historialVacaciones');
-    // Filtramos por las dudas para asegurar privacidad
+    if(!contenedor) return;
+
+    // Filtramos para que cada empleado vea solo sus vacaciones
     const misVacas = lista.filter(v => v.dni && v.dni.toString() === USER_INFO.dni.toString());
 
     if (misVacas.length === 0) {
@@ -1156,20 +1122,41 @@ function renderizarVacas(lista) {
         return;
     }
 
-    contenedor.innerHTML = misVacas.map(v => `
+    contenedor.innerHTML = misVacas.map(v => {
+        // --- MOTOR DE CÁLCULO DE DÍAS (CORREGIDO) ---
+        // Convertimos las fechas de texto a objetos de fecha reales
+        const f1 = new Date(v.desde);
+        const f2 = new Date(v.hasta);
+        
+        // Calculamos la diferencia en milisegundos y la pasamos a días
+        const diferenciaMili = f2 - f1;
+        const diasCalculados = Math.floor(diferenciaMili / (1000 * 60 * 60 * 24)) + 1;
+
+        // Formateamos las fechas para que se vean DD/MM/AAAA
+        const desdeFormateada = v.desde.split('-').reverse().join('/');
+        const hastaFormateada = v.hasta.split('-').reverse().join('/');
+
+        return `
         <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid ${v.estado === 'Pendiente' ? '#f59e0b' : '#10b981'};">
             <div style="display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; margin-bottom: 5px;">
-                <span>Pedido el: ${v.fechaSolicitud}</span>
+                <span>Solicitado: ${v.fechaSolicitud}</span>
                 <span style="color: ${v.estado === 'Pendiente' ? '#f59e0b' : '#10b981'}; font-weight: bold;">${v.estado.toUpperCase()}</span>
             </div>
+            
             <div style="font-weight: bold; font-size: 14px; color: #fff;">
-                🗓️ ${v.desde} <span style="color:#3b82f6;">→</span> ${v.hasta}
+                🗓️ ${desdeFormateada} <span style="color:#3b82f6;">→</span> ${hastaFormateada}
             </div>
+
+            <div style="margin-top: 5px; font-size: 12px; color: #3b82f6; font-weight: 500;">
+                📏 Período de: ${diasCalculados} ${diasCalculados === 1 ? 'día' : 'días'}
+            </div>
+
             <div style="margin-top: 8px; font-size: 12px; color: #10b981; background: rgba(16,185,129,0.1); padding: 5px; border-radius: 5px;">
                 💬 Resp: ${v.respuesta}
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 async function compartirFalta() {
@@ -1455,6 +1442,10 @@ function actualizarInterfazUsuario() {
     if (datosFrescos) {
         USER_INFO.nombre = datosFrescos.nombre;
         USER_INFO.sucursal = datosFrescos.sucursal;
+        // Agregamos esto para captar también los días de vacaciones desde la nube si existen
+        if(datosFrescos.vacaciones_disponibles) {
+            USER_INFO.vacaciones_disponibles = datosFrescos.vacaciones_disponibles;
+        }
     }
 
     const nombre = datosFrescos ? datosFrescos.nombre : (USER_INFO.nombre || "Usuario");
@@ -1483,6 +1474,13 @@ function actualizarInterfazUsuario() {
     if(legajoNombre) legajoNombre.innerText = nombre;
     if(legajoID) legajoID.innerText = `ID Legajo: ${dni}`;
     if(legajoSucursal) legajoSucursal.innerText = sucursal;
+
+    // --- CORRECCIÓN FINAL: DÍAS DE VACACIONES (Limpia el signo pesos) ---
+    const circuloVacas = document.getElementById('vaca-dias-disponibles');
+    if(circuloVacas) {
+        // Esto reemplaza el texto raro por el número real
+        circuloVacas.innerText = USER_INFO.vacaciones_disponibles || 0;
+    }
 }
 
 function verMiCredencial() {
@@ -1612,42 +1610,57 @@ const firebaseConfig = {
   appId: "1:744159996185:web:13987be97cd55c79c5bd88"
 };
 
-// --- 2. CONEXIÓN AL MOTOR (Las líneas que faltaban) ---
+// --- CONFIGURACIÓN Y CONEXIÓN FIREBASE ---
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database(); 
 
-// --- 3. SINCRONIZACIÓN MAESTRA (Index 79) ---
+// --- MOTOR DE ACTUALIZACIÓN EN TIEMPO REAL (VERSIÓN FORZADA) ---
 db.ref('empleados').on('value', (snapshot) => {
     const data = snapshot.val();
     if (data) {
-        // Convertimos los datos de la nube
+        // 1. Sincronizamos la lista global
         const listaNueva = Object.values(data);
-        
-        // Actualizamos la lista local EMPLEADOS
         EMPLEADOS.length = 0;
         listaNueva.forEach(emp => EMPLEADOS.push(emp));
-        console.log("✅ Conexión exitosa. Datos frescos de la nube recibidos.");
+        console.log("✅ Nube actualizada. Buscando cambios en el perfil...");
 
-        // Actualizamos la sesión activa para que el nombre cambie en tiempo real
-        if (USER_INFO && USER_INFO.dni) {
-            const dniActual = USER_INFO.dni.toString();
-            const yoActualizado = listaNueva.find(e => e.dni.toString() === dniActual);
-            if (yoActualizado) {
-                USER_INFO.nombre = yoActualizado.nombre;
-                USER_INFO.sucursal = yoActualizado.sucursal;
+        // 2. Si hay sesión activa, forzamos la actualización de datos
+        const sesionGuardada = localStorage.getItem('user_session_rt');
+        if (sesionGuardada) {
+            const userLocal = JSON.parse(sesionGuardada);
+            const dniActual = userLocal.dni.toString();
+            const yo = listaNueva.find(e => e.dni.toString() === dniActual);
+            
+            if (yo) {
+                // Actualizamos el objeto global USER_INFO
+                USER_INFO.nombre = yo.nombre;
+                USER_INFO.sucursal = yo.sucursal;
+                
+                // Guardamos la nueva "verdad" en el teléfono
                 localStorage.setItem('user_session_rt', JSON.stringify(USER_INFO));
-            }
-        }
+                
+                // 3. ACTUALIZACIÓN VISUAL INMEDIATA (FORZADA)
+                setTimeout(() => {
+                    // Actualizamos el nombre en el saludo principal
+                    const labelNombre = document.getElementById('user-name-main');
+                    if(labelNombre) labelNombre.innerText = yo.nombre;
 
-        // Refrescamos la pantalla (Fotos, Nombres, Legajo)
-        if (typeof actualizarInterfazUsuario === 'function') {
-            actualizarInterfazUsuario();
+                    // Actualizamos el nombre en el Legajo
+                    const legajoNombre = document.getElementById('legajo-nombre-full');
+                    if(legajoNombre) legajoNombre.innerText = yo.nombre;
+
+                    // Refrescamos toda la interfaz por las dudas
+                    if (typeof actualizarInterfazUsuario === 'function') {
+                        actualizarInterfazUsuario();
+                    }
+                    console.log("👤 Nombre actualizado a:", yo.nombre);
+                }, 100);
+            }
         }
     }
 }, (error) => {
-    console.error("❌ Error de Firebase:", error);
+    console.error("❌ Error de sincronización:", error);
 });
-
 function accesoEncargado() {
     const clave = prompt("🔐 CONTROL DE ACCESO\nIngrese clave (Mantenimiento, CEO o Desarrollador):");
 

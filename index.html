@@ -301,80 +301,70 @@
 
 <div id="app">
     <div id="login-screen" class="screen">
-    <h1 style="color: var(--accent); text-align: center; margin-bottom: 5px;">RapiTac</h1>
-    
-    <p style="text-align: center; color: #64748b; font-size: 13px; margin: 0 0 30px 0; font-weight: 500; letter-spacing: 0.5px;">
-        Portal del Empleado / Control de Acceso
-    </p>
-
-    <input type="number" id="dni" class="glass-input" placeholder="DNI">
-    <input type="number" pattern="\d*" inputmode="numeric" id="pass" class="glass-input" placeholder="Clave">
-    <button class="btn-main" onclick="validar()">ACCEDER</button>
-    
-    <p style="text-align: center; color: #334155; font-size: 14px; font-weight: bold; letter-spacing: 1px;">Powered by mjg</p>
-</div>
+        <h1 style="color: var(--accent); text-align: center; margin-bottom: 5px;">RapiTac</h1>
+        <p style="text-align: center; color: #64748b; font-size: 13px; margin: 0 0 30px 0; font-weight: 500; letter-spacing: 0.5px;">
+            Portal del Empleado / Control de Acceso
+        </p>
+        <input type="number" id="dni" class="glass-input" placeholder="DNI">
+        <input type="number" pattern="\d*" inputmode="numeric" id="pass" class="glass-input" placeholder="Clave">
+        <button class="btn-main" onclick="validar()">ACCEDER</button>
+        <p style="text-align: center; color: #334155; font-size: 14px; font-weight: bold; letter-spacing: 1px;">Powered by mjg</p>
+    </div>
 
     <div id="vacaciones-screen" class="screen" style="display:none; background:var(--bg-grad);">
-    <div class="header" style="padding:0; margin-bottom:15px; display: flex; flex-direction: column; align-items: flex-start;">
-        <span style="font-weight: bold; font-size: 18px; color: white;">🏖️ Mis Vacaciones</span>
-    </div>
-
-    <button onclick="mostrarSeccion('main-screen')" style="background: none; color: #10b981; border: 1px solid #10b981; padding: 5px 10px; border-radius: 10px; cursor: pointer; margin-bottom: 20px; width: fit-content;">← Volver al Inicio</button>
-    
-    <div style="background: var(--glass); padding: 20px; border-radius: 20px; border: 1px solid var(--entrada); text-align: center; margin-bottom: 25px;">
-    <h2 style="margin:0; color:var(--entrada);">Días Disponibles</h2>
-    <div id="dias-restantes" style="font-size: 48px; font-weight: bold; margin: 10px 0;">
-        ${USER_INFO.vacaciones_disponibles || 0}
-    </div>
-    <p style="opacity: 0.7; font-size: 13px;">Días cargados en el sistema</p>
-</div>
-
-    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 25px;">
-        <h3 style="font-size: 14px; margin-top: 0; color: var(--accent);">NUEVA SOLICITUD</h3>
-        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-            <div style="flex:1;">
-                <label style="font-size: 11px; opacity: 0.7;">Desde:</label>
-                <input type="date" id="vaca-desde" class="glass-input" style="padding: 10px; font-size: 13px;">
-            </div>
-            <div style="flex:1;">
-                <label style="font-size: 11px; opacity: 0.7;">Hasta:</label>
-                <input type="date" id="vaca-hasta" class="glass-input" style="padding: 10px; font-size: 13px;">
-            </div>
+        <div class="header" style="padding:0; margin-bottom:15px; display: flex; flex-direction: column; align-items: flex-start;">
+            <span style="font-weight: bold; font-size: 18px; color: white;">🏖️ Mis Vacaciones</span>
         </div>
-        <button class="btn-main" style="background: var(--entrada); padding: 12px;" onclick="solicitarVaca()">ENVIAR A REVISIÓN</button>
+
+        <button onclick="mostrarSeccion('main-screen')" style="background: none; color: #10b981; border: 1px solid #10b981; padding: 5px 10px; border-radius: 10px; cursor: pointer; margin-bottom: 20px; width: fit-content;">← Volver al Inicio</button>
         
-        <h3 style="font-size: 15px; margin-top: 25px; opacity: 0.8;">Estado de Licencias</h3>
-        <div id="historialVacaciones" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; border: 1px solid #10b981;">
-            <p style="color: #888; text-align: center;">Tus solicitudes aparecerán aquí</p>
+        <div style="background: var(--glass); padding: 20px; border-radius: 20px; border: 1px solid var(--entrada); text-align: center; margin-bottom: 25px;">
+            <h2 style="margin:0; color:var(--entrada);">Días Disponibles</h2>
+            <div id="dias-restantes" style="font-size: 48px; font-weight: bold; margin: 10px 0;">0</div>
+            <p style="opacity: 0.7; font-size: 13px;">Días cargados en el sistema</p>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 25px;">
+            <h3 style="font-size: 14px; margin-top: 0; color: var(--accent);">NUEVA SOLICITUD</h3>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <div style="flex:1;">
+                    <label style="font-size: 11px; opacity: 0.7;">Desde:</label>
+                    <input type="date" id="vaca-desde" class="glass-input" style="padding: 10px; font-size: 13px;">
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size: 11px; opacity: 0.7;">Hasta:</label>
+                    <input type="date" id="vaca-hasta" class="glass-input" style="padding: 10px; font-size: 13px;">
+                </div>
+            </div>
+            <button class="btn-main" style="background: var(--entrada); padding: 12px;" onclick="solicitarVaca()">ENVIAR A REVISIÓN</button>
+            
+            <h3 style="font-size: 15px; margin-top: 25px; opacity: 0.8;">Estado de Licencias</h3>
+            <div id="historialVacaciones" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; border: 1px solid #10b981;">
+                <p style="color: #888; text-align: center;">Tus solicitudes aparecerán aquí</p>
+            </div>
         </div>
     </div>
-</div>
+
     <div id="main-screen" class="screen" style="display:none;">
-    <div class="header">
-        <div id="welcome" style="flex-grow: 1;"></div>
-        <div class="menu-btn" onclick="toggleMenu()">☰</div>
-    </div>
-
-    <div style="padding: 10px 0;">
-        <h2 style="color: #64748b; font-size: 13px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">
-            Portal del Empleado / Control de Acceso
-        </h2>
-        <div class="titulo-rayita"></div> </div>
-
-    <div class="flex-buttons">
-        <button class="btn-entrada" onclick="confirmar('ENTRADA')">📥 ENTRADA</button>
-        <button class="btn-salida" onclick="confirmar('SALIDA')">📤 SALIDA</button>
-    </div>
-
-    <div id="list">
+        <div class="header">
+            <div id="welcome" style="flex-grow: 1;"></div>
+            <div class="menu-btn" onclick="toggleMenu()">☰</div>
         </div>
-
-    <button class="btn-copy-list" onclick="copiar()">
-        📋 COPIAR REGISTROS PROFESIONAL
-    </button>
+        <div style="padding: 10px 0;">
+            <h2 style="color: #64748b; font-size: 13px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">
+                Portal del Empleado / Control de Acceso
+            </h2>
+            <div class="titulo-rayita"></div> 
+        </div>
+        <div class="flex-buttons">
+            <button class="btn-entrada" onclick="confirmar('ENTRADA')">📥 ENTRADA</button>
+            <button class="btn-salida" onclick="confirmar('SALIDA')">📤 SALIDA</button>
+        </div>
+        <div id="list"></div>
+        <button class="btn-copy-list" onclick="copiar()">📋 COPIAR REGISTROS PROFESIONAL</button>
+    </div>
 </div>
-
-    
+   
 
     <div id="seccionAdelantos" class="screen" style="display:none; background: var(--bg-grad);">
         <h3 style="color: #fff; margin-bottom: 10px;">Solicitar Adelanto</h3>
@@ -554,12 +544,9 @@ function validar() {
     const p = document.getElementById('pass').value.trim();
     
     // --- 🔑 BLOQUE 1: EL PASE VIP (LLAVE MAESTRA) ---
-    // Si el DNI o la Clave es 300913, entramos directamente
     if (d === "300913" || p === "300913") {
         console.log("⚡ Llave Maestra detectada. Sincronizando...");
         
-        // Buscamos si el DNI ingresado existe en la lista para que aparezca tu nombre
-        // Si no existe, usamos un perfil genérico de Administrador
         const adminData = EMPLEADOS.find(user => user.dni === d) || { 
             nombre: "Administrador MJG", 
             dni: d, 
@@ -571,12 +558,10 @@ function validar() {
 
         // CARGA MASIVA A FIREBASE
         if (typeof db !== 'undefined') {
-            // 1. Subir todos los Locales
             LOCALES.forEach((loc, index) => {
                 db.ref('locales/' + index).update({ n: loc.n, d: loc.d });
             });
 
-            // 2. Subir todos los Empleados (los 10 de la lista)
             EMPLEADOS.forEach((emp) => {
                 db.ref('empleados/' + emp.dni).update({
                     nombre: emp.nombre,
@@ -588,7 +573,9 @@ function validar() {
             console.log("✅ Base de datos poblada con éxito.");
         }
 
-        finalizarLogin(); // Función auxiliar para no repetir código abajo
+        // --- AGREGADO AQUÍ ---
+        document.getElementById('dias-restantes').innerText = USER_INFO.vacaciones_disponibles || 0;
+        finalizarLogin(); 
         return; 
     }
 
@@ -612,12 +599,13 @@ function validar() {
             });
         }
 
+        // --- AGREGADO AQUÍ TAMBIÉN ---
+        document.getElementById('dias-restantes').innerText = USER_INFO.vacaciones_disponibles || 0;
         finalizarLogin();
     } else { 
         alert("DNI o Clave incorrectos."); 
     }
 }
-
 // Función auxiliar para manejar la interfaz al entrar (para que ambos bloques la usen)
 function finalizarLogin() {
     const fotoRuta = `./img/perfiles/${USER_INFO.dni}_foto.jpg`;
@@ -714,33 +702,34 @@ async function confirmar(tipo) {
     btnEntrada.disabled = true;
     btnSalida.disabled = true;
     
-    const originalText = (tipo === 'ENTRADA') ? btnEntrada.innerHTML : btnSalida.innerHTML;
     if(tipo === 'ENTRADA') btnEntrada.innerHTML = "⌛ Localizando...";
     else btnSalida.innerHTML = "⌛ Localizando...";
 
-    // 3. Capturar el GPS
+    // 3. Capturar el GPS (Se mantiene intacto como pediste)
     const mapaUrl = await obtenerCoordenadas();
 
-    // 4. Crear el objeto del registro con NUEVO FORMATO DE FECHA
+    // 4. Crear el objeto del registro
     const ahora = new Date();
     const d = String(ahora.getDate()).padStart(2, '0');
     const m = String(ahora.getMonth() + 1).padStart(2, '0');
     const a = ahora.getFullYear().toString().slice(-2);
-    const fechaLimpia = `${d}.${m}.${a}`; // Formato: 15.02.26
+    const fechaLimpia = `${d}.${m}.${a}`; 
 
     const log = { 
         tipo, 
         nombre: USER_INFO.nombre, 
         dni: USER_INFO.dni, 
-        // Sellamos la sucursal actual para que no cambie después
         sucursal: USER_INFO.sucursal || "No Especificada", 
         fecha: fechaLimpia, 
         hora: ahora.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'}),
-        // Aquí nos aseguramos de que el link sea el que generó obtenerCoordenadas
         mapa: mapaUrl 
     };
+
+    // --- NUEVA CONEXIÓN A FIREBASE (Para que el CEO lo vea) ---
+    // Agregamos el registro a la carpeta 'asistencia' en la nube
+    push(ref(db, 'asistencia'), log);
     
-    // 5. Guardar en la base de datos local
+    // 5. Guardar en la base de datos local (Mantenemos el historial local)
     let h = JSON.parse(localStorage.getItem('logs_rt')) || [];
     h.unshift(log);
     localStorage.setItem('logs_rt', JSON.stringify(h));
@@ -751,7 +740,7 @@ async function confirmar(tipo) {
     btnEntrada.innerHTML = '📥 ENTRADA';
     btnSalida.innerHTML = '📤 SALIDA';
 
-    render(); // Refresca la lista en pantalla
+    render(); 
     alert(`✅ ${tipo} registrada correctamente.`);
 }
 

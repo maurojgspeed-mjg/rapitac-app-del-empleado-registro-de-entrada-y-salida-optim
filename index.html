@@ -322,10 +322,12 @@
     <button onclick="mostrarSeccion('main-screen')" style="background: none; color: #10b981; border: 1px solid #10b981; padding: 5px 10px; border-radius: 10px; cursor: pointer; margin-bottom: 20px; width: fit-content;">← Volver al Inicio</button>
     
     <div style="background: var(--glass); padding: 20px; border-radius: 20px; border: 1px solid var(--entrada); text-align: center; margin-bottom: 25px;">
-        <h2 style="margin:0; color:var(--entrada);">Días Disponibles</h2>
-        <div id="dias-restantes" style="font-size: 48px; font-weight: bold; margin: 10px 0;">14</div>
-        <p style="opacity: 0.7; font-size: 13px;">Período correspondiente a 2026</p>
+    <h2 style="margin:0; color:var(--entrada);">Días Disponibles</h2>
+    <div id="dias-restantes" style="font-size: 48px; font-weight: bold; margin: 10px 0;">
+        ${USER_INFO.vacaciones_disponibles || 0}
     </div>
+    <p style="opacity: 0.7; font-size: 13px;">Días cargados en el sistema</p>
+</div>
 
     <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 25px;">
         <h3 style="font-size: 14px; margin-top: 0; color: var(--accent);">NUEVA SOLICITUD</h3>
@@ -1063,53 +1065,7 @@ function copiar() {
     if(id === 'vacaciones-screen') actualizarVistaVacaciones();
 }
 
-    function solicitarVaca() {
-    const desde = document.getElementById('vaca-desde').value;
-    const hasta = document.getElementById('vaca-hasta').value;
-
-    if (!desde || !hasta) {
-        return alert("Por favor, selecciona ambas fechas.");
-    }
-
-    if (confirm(`¿Solicitar vacaciones desde el ${desde} al ${hasta}?`)) {
-        const nuevaVaca = {
-            id: Date.now(),
-            dni: USER_INFO.dni,
-            nombre: USER_INFO.nombre, // Añadimos el nombre para facilitar la gestión
-            desde: desde,
-            hasta: hasta,
-            fechaSolicitud: new Date().toLocaleString(), // Usamos toLocaleString para hora y fecha
-            estado: "Pendiente",
-            respuesta: "Esperando revisión de locales..."
-        };
-
-        // 1. Guardado local (Historial del empleado)
-        let vacas = JSON.parse(localStorage.getItem('vacaciones_rapitac')) || [];
-        vacas.unshift(nuevaVaca);
-        localStorage.setItem('vacaciones_rapitac', JSON.stringify(vacas));
-
-        // 2. ENVÍO A LA NUBE (Sincronización con Firebase)
-        if (typeof db !== 'undefined') {
-            // Guardamos en la carpeta global de vacaciones
-            db.ref('solicitudes/vacaciones/' + nuevaVaca.id).set(nuevaVaca);
-            
-            // Notificamos al CEO
-            db.ref('notificaciones_ceo').push({
-                mensaje: `🏖️ Vacaciones: ${USER_INFO.nombre} (del ${desde} al ${hasta})`,
-                fecha: nuevaVaca.fechaSolicitud,
-                leido: false
-            });
-        }
-
-        // 3. Limpieza y actualización
-        document.getElementById('vaca-desde').value = '';
-        document.getElementById('vaca-hasta').value = '';
-        
-        actualizarVistaVacaciones();
-        alert("Solicitud de vacaciones enviada y sincronizada.");
-    }
-}
-// --- MOTOR DE VACACIONES (CORREGIDO Y PRIVADO) ---
+// --- MOTOR DE VACACIONES (UNIFICADO Y SINCRONIZADO) ---
 function solicitarVaca() {
     const desde = document.getElementById('vaca-desde').value;
     const hasta = document.getElementById('vaca-hasta').value;
@@ -1119,38 +1075,79 @@ function solicitarVaca() {
     }
 
     if (confirm(`¿Solicitar vacaciones del ${desde} al ${hasta}?`)) {
-        let vacas = JSON.parse(localStorage.getItem('vacaciones_rapitac')) || [];
-        
+        // Creamos el objeto con toda la información necesaria
         const nuevaSolicitud = {
             id: Date.now(),
-            dni: USER_INFO.dni, // <--- AHORA SÍ GUARDA EL DNI
+            dni: USER_INFO.dni,
+            nombre: USER_INFO.nombre, 
             desde: desde,
             hasta: hasta,
-            fechaSolicitud: new Date().toLocaleDateString(),
+            fechaSolicitud: new Date().toLocaleString(), // Fecha y hora completa
             estado: "Pendiente",
             respuesta: "Esperando revisión de locales..."
         };
-        
+
+        // 1. Guardado local (Historial del empleado para ver rápido)
+        let vacas = JSON.parse(localStorage.getItem('vacaciones_rapitac')) || [];
         vacas.unshift(nuevaSolicitud);
         localStorage.setItem('vacaciones_rapitac', JSON.stringify(vacas));
-        
+
+        // 2. ENVÍO A LA NUBE (Sincronización con Firebase)
+        if (typeof db !== 'undefined') {
+            // Guardamos en la carpeta global de vacaciones para el CEO
+            db.ref('solicitudes/vacaciones/' + nuevaSolicitud.id).set(nuevaSolicitud);
+            
+            // Notificamos al CEO
+            db.ref('notificaciones_ceo').push({
+                mensaje: `🏖️ Vacaciones: ${USER_INFO.nombre} (del ${desde} al ${hasta})`,
+                fecha: nuevaSolicitud.fechaSolicitud,
+                leido: false
+            });
+        }
+
+        // 3. Limpieza de los campos
         document.getElementById('vaca-desde').value = '';
         document.getElementById('vaca-hasta').value = '';
         
         actualizarVistaVacaciones();
-        alert("¡Solicitud enviada! Tu encargado la revisará pronto.");
+        alert("¡Solicitud enviada y sincronizada! Tu encargado la revisará pronto.");
     }
 }
 
+// --- SISTEMA DE VACACIONES SINCRONIZADO (RECONSTRUYE HISTORIAL) ---
 function actualizarVistaVacaciones() {
     const contenedor = document.getElementById('historialVacaciones');
     if(!contenedor) return;
 
-    const todasLasVacas = JSON.parse(localStorage.getItem('vacaciones_rapitac')) || [];
+    // 1. Cargamos lo que hay en el teléfono primero (carga instantánea)
+    let vacasLocales = JSON.parse(localStorage.getItem('vacaciones_rapitac')) || [];
+    renderizarVacas(vacasLocales);
 
-    // FILTRO DE PRIVACIDAD REFORZADO:
-    // Solo muestra si coincide el DNI (y oculta los registros viejos sin DNI)
-    const misVacas = todasLasVacas.filter(v => v.dni && v.dni === USER_INFO.dni);
+    // 2. SINCRONIZACIÓN CON LA NUBE: Traemos los datos de Firebase para este DNI
+    if (typeof db !== 'undefined') {
+        db.ref('solicitudes/vacaciones').orderByChild('dni').equalTo(USER_INFO.dni)
+            .once('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const datosNube = Object.values(snapshot.val());
+                    
+                    // Ordenamos: Lo más nuevo arriba
+                    datosNube.sort((a, b) => b.id - a.id);
+                    
+                    // Actualizamos el teléfono con la verdad de la nube
+                    localStorage.setItem('vacaciones_rapitac', JSON.stringify(datosNube));
+                    
+                    // Dibujamos de nuevo con los datos oficiales
+                    renderizarVacas(datosNube);
+                }
+            });
+    }
+}
+
+// Función auxiliar para mostrar las tarjetas de vacaciones
+function renderizarVacas(lista) {
+    const contenedor = document.getElementById('historialVacaciones');
+    // Filtramos por las dudas para asegurar privacidad
+    const misVacas = lista.filter(v => v.dni && v.dni.toString() === USER_INFO.dni.toString());
 
     if (misVacas.length === 0) {
         contenedor.innerHTML = '<p style="color: #888; text-align: center; font-size: 13px;">No tienes solicitudes de licencia.</p>';
@@ -1164,7 +1161,7 @@ function actualizarVistaVacaciones() {
                 <span style="color: ${v.estado === 'Pendiente' ? '#f59e0b' : '#10b981'}; font-weight: bold;">${v.estado.toUpperCase()}</span>
             </div>
             <div style="font-weight: bold; font-size: 14px; color: #fff;">
-                🗓️ ${v.desde} <span style="color:var(--accent);">→</span> ${v.hasta}
+                🗓️ ${v.desde} <span style="color:#3b82f6;">→</span> ${v.hasta}
             </div>
             <div style="margin-top: 8px; font-size: 12px; color: #10b981; background: rgba(16,185,129,0.1); padding: 5px; border-radius: 5px;">
                 💬 Resp: ${v.respuesta}
@@ -1172,6 +1169,7 @@ function actualizarVistaVacaciones() {
         </div>
     `).join('');
 }
+
 async function compartirFalta() {
     const fecha = document.getElementById('fecha-ausencia').value;
     const motivo = document.getElementById('motivo-ausencia').value;

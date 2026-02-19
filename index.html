@@ -1440,35 +1440,40 @@ function descargarDocumento(tipo) {
 }
 
 function actualizarInterfazUsuario() {
-    // 1. Verificamos que tengamos los datos del usuario
     if (!USER_INFO || !USER_INFO.dni) {
         console.error("Error: No hay información de usuario cargada.");
         return;
     }
 
     const dni = USER_INFO.dni.toString().trim();
-    const nombre = USER_INFO.nombre || "Usuario";
-    const sucursal = USER_INFO.sucursal || "No asignada";
+    
+    // --- REFUERZO PARA INDEX 76 ---
+    // Verificamos que EMPLEADOS exista antes de buscar, para evitar errores en la consola
+    const datosFrescos = (typeof EMPLEADOS !== 'undefined') ? EMPLEADOS.find(e => e.dni.toString() === dni) : null;
+    
+    // Si encontramos al empleado en la lista global, usamos ese nombre (el de la nube).
+    // Si no, usamos el que está en la sesión (el del teléfono).
+    const nombre = datosFrescos ? datosFrescos.nombre : (USER_INFO.nombre || "Usuario");
+    
+    // Hacemos lo mismo con la sucursal para que si cambia el nombre del local, también se vea
+    const sucursal = datosFrescos ? (datosFrescos.sucursal || USER_INFO.sucursal) : (USER_INFO.sucursal || "No asignada");
 
     // --- FOTO DE PERFIL (Principal y Legajo) ---
-    const fotos = document.querySelectorAll('.foto-perfil-js'); // Usaremos una clase para actualizar todas juntas
+    const fotos = document.querySelectorAll('.foto-perfil-js');
     const rutaFoto = `./img/perfiles/${dni}_foto.jpg?v=${Date.now()}`;
 
     fotos.forEach(img => {
         img.src = rutaFoto;
         img.onerror = function() {
-            // Si falla, pone el avatar de DiceBear
             this.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${dni}`;
             this.onerror = null;
         };
     });
 
     // --- DATOS DE TEXTO ---
-    // En la pantalla principal
     const labelNombrePrincipal = document.getElementById('user-name-main');
     if(labelNombrePrincipal) labelNombrePrincipal.innerText = nombre;
 
-    // En el Legajo Digital
     const legajoNombre = document.getElementById('legajo-nombre-full');
     const legajoID = document.getElementById('legajo-id');
     const legajoSucursal = document.getElementById('legajo-sucursal');
@@ -1477,7 +1482,6 @@ function actualizarInterfazUsuario() {
     if(legajoID) legajoID.innerText = `ID Legajo: ${dni}`;
     if(legajoSucursal) legajoSucursal.innerText = sucursal;
 }
-
 
 function verMiCredencial() {
     if (!USER_INFO || !USER_INFO.dni) {
@@ -1610,31 +1614,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// 3. Función para que el "Lapicito" guarde en la nube
-function editarEnNube(tipo, id, nombreActual) {
-    const nuevoNombre = prompt(`Editar ${tipo}:`, nombreActual);
-    
-    if (nuevoNombre && nuevoNombre.trim() !== "" && nuevoNombre !== nombreActual) {
-        // Referencia a la base de datos de Firebase
-        const ruta = db.ref(`${tipo}/${id}`);
-        
-        // Creamos el objeto de actualización
-        // Si es local usamos 'n' (nombre), si es empleado usamos 'nombre'
-        const datosActualizados = (tipo === 'locales') 
-            ? { n: nuevoNombre.trim() } 
-            : { nombre: nuevoNombre.trim() };
-
-        ruta.update(datosActualizados)
-            .then(() => {
-                alert("✅ Sincronizado con éxito. Los cambios se verán al recargar.");
-                location.reload(); // Recargamos para que impacte en las listas locales
-            })
-            .catch((error) => {
-                console.error("Error Firebase:", error);
-                alert("❌ Error al conectar con la nube. Verificá tu conexión.");
-            });
-    }
-}
 function accesoEncargado() {
     const clave = prompt("🔐 CONTROL DE ACCESO\nIngrese clave (Mantenimiento, CEO o Desarrollador):");
 
@@ -1676,6 +1655,22 @@ function descargarReciboUniversal(dni, mes, año) {
     }
 }
 
+// Bloqueo de salida accidental y manejo del botón atrás
+(function() {
+    // Agregamos un estado vacío al historial apenas carga la app
+    history.pushState(null, null, location.href);
+
+    window.onpopstate = function() {
+        // Cuando el usuario intenta ir atrás, volvemos a empujar el estado
+        history.pushState(null, null, location.href);
+        
+        // Aquí lanzamos la confirmación que me pediste para RapiTac
+        const confirmar = confirm("¿Estás seguro de que quieres salir?");
+        if (confirmar) {
+            window.close(); // Intenta cerrar, aunque en PWA a veces solo minimiza
+        }
+    };
+})();
 
 window.onload = function() {
     const status = document.getElementById('status-text');
@@ -1744,49 +1739,60 @@ function verSeccionMaestra(tipo) {
         });
         contenedor.innerHTML = html;
     }
-    else if (tipo === 'excel') {
-        contenedor.innerHTML = `
-            <div style="padding:20px; text-align:center; animation: fadeIn 0.3s;">
-                <div style="font-size:40px; margin-bottom:10px;">📊</div>
-                <h3 style="color:white; font-size:16px;">Reportes de Exportación</h3>
-                <p style="color:#94a3b8; font-size:12px; margin-bottom:20px;">Generar archivo compatible con Excel del historial de Huella Segura.</p>
-                <button onclick="if(confirm('¿Generar reporte Excel?')) exportarExcel()" style="background:#10b981; color:white; border:none; padding:12px 20px; border-radius:10px; font-weight:bold; cursor:pointer; width:100%;">DESCARGAR EXCEL (.CSV)</button>
-            </div>`;
+    
+}
+
+// --- FUNCIÓN DE EDICIÓN UNIFICADA (NUBE + LOCAL) - VERSIÓN FINAL ---
+async function editarEnNube(categoria, id, nombreActual) {
+    const nuevoNombre = prompt(`Editar nombre de ${categoria}:`, nombreActual);
+    
+    if (nuevoNombre && nuevoNombre.trim() !== "" && nuevoNombre !== nombreActual) {
+        try {
+            // 1. REFERENCIA A FIREBASE
+            // Si es local, el ID es el índice. Si es empleado, es su DNI.
+            const ruta = db.ref(`${categoria}/${id}`);
+            
+            // 2. PREPARAR DATOS SEGÚN CATEGORÍA
+            const datosActualizados = (categoria === 'locales') 
+                ? { n: nuevoNombre.trim() } 
+                : { nombre: nuevoNombre.trim() };
+
+            // 3. GUARDAR EN LA NUBE
+            await ruta.update(datosActualizados);
+
+            // --- 4. ACTUALIZAR LOCALMENTE (Index 74) ---
+if (categoria === 'empleados') {
+    const emp = EMPLEADOS.find(e => e.dni.toString() === id.toString());
+    if (emp) {
+        emp.nombre = nuevoNombre.trim();
+        
+        // Si el editado soy yo mismo:
+        if (USER_INFO && USER_INFO.dni.toString() === id.toString()) {
+            USER_INFO.nombre = nuevoNombre.trim();
+            localStorage.setItem('user_session_rt', JSON.stringify(USER_INFO)); 
+        }
     }
-    else if (tipo === 'mapa') {
-        contenedor.innerHTML = `
-            <div style="padding:20px; text-align:center; animation: fadeIn 0.3s;">
-                <div style="font-size:40px; margin-bottom:10px;">🔥</div>
-                <h3 style="color:white; font-size:16px;">Mapa de Densidad</h3>
-                <p style="color:#94a3b8; font-size:12px; margin-bottom:20px;">Visualización de zonas calientes de registros activos.</p>
-                <button onclick="alert('Cargando mapa de calor de Huella Segura (mjg)...')" style="background:#f97316; color:white; border:none; padding:12px 20px; border-radius:10px; font-weight:bold; cursor:pointer; width:100%;">VER MAPA DE CALOR</button>
-            </div>`;
+} else if (categoria === 'locales') {
+    const index = parseInt(id);
+    const nombreAnterior = LOCALES[index].n; // Guardamos el viejo para comparar
+    LOCALES[index].n = nuevoNombre.trim();
+
+    // Si el local que cambié es el local donde está trabajando el usuario actual:
+    if (USER_INFO && USER_INFO.sucursal === nombreAnterior) {
+        USER_INFO.sucursal = nuevoNombre.trim();
+        localStorage.setItem('user_session_rt', JSON.stringify(USER_INFO));
     }
 }
 
-// --- FUNCIÓN DE EDICIÓN UNIFICADA (NUBE / LOCAL) ---
-function editarEnNube(categoria, id, nombreActual) {
-    if (categoria === 'empleados') {
-        const nuevoNombre = prompt("Editar Nombre del Empleado:", nombreActual);
-        if (nuevoNombre && confirm(`¿Desea cambiar el nombre de "${nombreActual}" a "${nuevoNombre}"?`)) {
-            const emp = EMPLEADOS.find(e => e.dni === id);
-            if (emp) {
-                emp.nombre = nuevoNombre;
-                alert("✅ Nombre de empleado actualizado localmente.");
-                verSeccionMaestra('empleados');
-            }
-        }
-    } 
-    else if (categoria === 'locales') {
-        const index = parseInt(id);
-        const nuevoNombre = prompt("Nombre del Local:", LOCALES[index].n);
-        const nuevaDir = prompt("Dirección:", LOCALES[index].d);
-        
-        if (nuevoNombre && nuevaDir && confirm("¿Confirmar cambios en la sucursal?")) {
-            LOCALES[index].n = nuevoNombre;
-            LOCALES[index].d = nuevaDir;
-            alert("✅ Sucursal actualizada localmente.");
-            verSeccionMaestra('locales');
+alert("✅ Sincronizado: Cambio guardado en la Nube y el Teléfono.");
+
+// Refrescamos toda la pantalla principal (Nombre y Sucursal en el header y legajo)
+actualizarInterfazUsuario(); 
+verSeccionMaestra(categoria);
+
+        } catch (error) {
+            console.error("Error al sincronizar:", error);
+            alert("❌ Error: No se pudo guardar en la nube. Verificá tu conexión.");
         }
     }
 }

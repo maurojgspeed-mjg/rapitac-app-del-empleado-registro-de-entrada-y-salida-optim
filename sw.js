@@ -1,15 +1,26 @@
-const CACHE_NAME = 'rapitac-mjg-v1';
-const assets = ['./', './index.html', './manifest.json'];
+const CACHE_NAME = 'rapitac-v4'; // Cambiá el número cada vez que actualices el Index
+const assets = [
+  './',
+  './index.html',
+  './manifest.json',
+  './img/icon-192.png',
+  './img/icon-512.png',
+  // Agregá aquí las rutas de tus logos o splash screens
+];
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(assets))
+// 1. INSTALACIÓN: Guarda los archivos en el teléfono
+self.addEventListener('install', evt => {
+  evt.waitUntil(
+    caches.open(CACHE_NAME).then(cache => {
+      console.log('Guardando archivos en caché...');
+      return cache.addAll(assets);
+    })
   );
 });
 
-// ESTO ES LO QUE SUELE FALTAR (Limpia basura vieja)
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
+// 2. ACTIVACIÓN: Limpia cachés viejos de versiones anteriores
+self.addEventListener('activate', evt => {
+  evt.waitUntil(
     caches.keys().then(keys => {
       return Promise.all(keys
         .filter(key => key !== CACHE_NAME)
@@ -19,8 +30,9 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then((res) => res || fetch(e.request))
+// 3. ESTRATEGIA: Primero intenta buscar en internet, si falla, usa el Caché
+self.addEventListener('fetch', evt => {
+  evt.respondWith(
+    fetch(evt.request).catch(() => caches.match(evt.request))
   );
 });

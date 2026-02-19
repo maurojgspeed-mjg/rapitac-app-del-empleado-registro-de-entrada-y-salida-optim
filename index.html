@@ -545,6 +545,7 @@ const EMPLEADOS = [
     { dni: "10101010", nombre: "Empleado Diez", clave: "110", sucursal: "Sucursal Ramos Mejía" }
 ];
 
+
 // Variable para el usuario que inicia sesión (se llena al validar)
 let USER_INFO = {};
 
@@ -1613,6 +1614,27 @@ const firebaseConfig = {
 // 2. Encendemos el motor
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+
+// --- SINCRONIZACIÓN AUTOMÁTICA (Index 77) ---
+// Este bloque escucha a Firebase y actualiza la lista del Index en vivo
+db.ref('empleados').on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+        // Convertimos el objeto de Firebase en una lista para nuestra App
+        const listaNueva = Object.keys(data).map(key => data[key]);
+        
+        // Reemplazamos la lista vieja por la de la Nube
+        EMPLEADOS.length = 0; // Vaciamos la lista vieja
+        listaNueva.forEach(emp => EMPLEADOS.push(emp)); // Metemos los datos frescos
+        
+        console.log("✅ Lista de Empleados sincronizada desde la Nube.");
+
+        // Si el usuario ya está logueado, actualizamos su nombre en la pantalla ahora mismo
+        if (typeof actualizarInterfazUsuario === 'function') {
+            actualizarInterfazUsuario();
+        }
+    }
+});
 
 function accesoEncargado() {
     const clave = prompt("🔐 CONTROL DE ACCESO\nIngrese clave (Mantenimiento, CEO o Desarrollador):");
